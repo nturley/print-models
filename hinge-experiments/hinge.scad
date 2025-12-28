@@ -45,15 +45,13 @@ translate([0, 0, 2])
 cylinder(8, r=2.8);
 
 // thin rect from male hinge
-translate([0, 0.1, 4.5])
-cube([10, 4.5, 3]);
-    
-translate([-.5, 2.4, 4.5])
-cylinder(3, r=2.2);
+translate([-3, 0, 4.5])
+cube([13, 5, 3]);
 
 // big contact plate from male hinge
-translate([5.5, 0.1, 0])
-cube([8.5, 4.5, 12]);
+translate([5.5, 0, 0])
+cube([8.5, 5, 12]);
+
 }
 
 
