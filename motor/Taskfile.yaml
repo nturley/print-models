@@ -1,0 +1,28 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Build all STL files
+    cmds:
+      - task: build-all
+
+  build-all:
+    desc: Build all parts to STL
+    cmds:
+      - task: build
+        vars: {PART: driveShaft}
+      - task: build
+        vars: {PART: driveWheel}
+      - task: build
+        vars: {PART: frame}
+      - task: build
+        vars: {PART: freeWheel}
+      - task: build
+        vars: {PART: gear1}
+      - task: build
+        vars: {PART: gear2}
+
+  build:
+    desc: Build a specific part
+    cmds:
+      - openscad -o build/{{.PART}}.stl parts/{{.PART}}.scad
