@@ -1,0 +1,23 @@
+version: '3'
+
+tasks:
+  default:
+    desc: Build all STL files
+    cmds:
+      - task: build-all
+
+  build-all:
+    desc: Build all parts to STL
+    cmds:
+      - task: build
+        vars: {PART: cage}
+      - task: build
+        vars: {PART: inner-race}
+      - task: build
+        vars: {PART: outer-race}
+
+  build:
+    desc: Build a specific part
+    dir: build
+    cmds:
+      - openscad -o {{.PART}}.stl ../parts/{{.PART}}.scad
