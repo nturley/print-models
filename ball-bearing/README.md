@@ -2,7 +2,9 @@
 
 This is a [Conrad style](https://en.wikipedia.org/wiki/Ball_bearing#Construction_types) ball bearing design.
 
-![alt text](image.png)
+![top view](image.png)
+
+![bottom view](image-4.png)
 
 ## Parts
 There's three parts, the outer race, the inner race, and the cage.
@@ -25,3 +27,7 @@ The rules of the game are:
 * The gap between the two races must be large enough to insert the balls (race_bore_offset)
 * The cage and races should be close enough, or the cage will wobble around as it spins (race_cage_clearance)
 * Its nice to have the top of the races above the top of the cage (race_top_extension)
+
+## Build
+
+The task file uses the openscad CLI to generate an STL file for each part.
