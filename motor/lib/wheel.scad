@@ -1,3 +1,7 @@
+// Included by the wheel part files; without this they render standalone at
+// OpenSCAD's coarse default resolution (bores become 5-7 sided polygons).
+$fn = 50;
+
 module wheel(big_holes=true) {
     difference() {
         cylinder(h=4, r=14);

@@ -64,7 +64,7 @@ def export_downloads(design: Design) -> list[dict]:
     to_bed[:3, 3] = [w / 2, d / 2, 0]
     placed = []
     for p in design.printed():
-        m = p.mesh.copy()
+        m = p.print_mesh.copy()
         m.apply_transform(to_bed @ plate.transforms[p.name])
         placed.append((p.name, m))
     plate_file = out / f"{design.name}-plate.3mf"
@@ -75,10 +75,8 @@ def export_downloads(design: Design) -> list[dict]:
     (out / "print").mkdir(parents=True, exist_ok=True)
     stls = []
     for p in design.printed():
-        m = p.print_mesh.copy()
-        m.apply_translation([-m.bounds[:, 0].mean(), -m.bounds[:, 1].mean(), 0])
         f = out / "print" / f"{p.name}.stl"
-        m.export(f)
+        p.print_mesh.export(f)
         stls.append(f)
     zip_file = out / f"{design.name}-stl.zip"
     with zipfile.ZipFile(zip_file, "w", zipfile.ZIP_DEFLATED) as z:

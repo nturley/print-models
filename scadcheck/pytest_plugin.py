@@ -97,11 +97,12 @@ def pytest_sessionfinish(session):
                     "name": p.name,
                     "kind": p.kind,
                     "stl": p.stl.relative_to(design.build_dir).as_posix(),
-                    "source": p.source.relative_to(repo_root).as_posix(),
+                    "source": p.link_source.relative_to(repo_root).as_posix(),
                     "print_stl": f"print/{p.name}.stl" if p.kind == "part" else None,
                     "color": p.color,
-                    "size": [round(v, 3) for v in p.mesh.extents],
-                    # row-major 4x4 placing the part on the print bed (printed parts only)
+                    # as printed for printed parts, as assembled for vitamins
+                    "size": [round(v, 3) for v in (p.print_mesh if p.kind == "part" else p.mesh).extents],
+                    # row-major 4x4 placing print_stl on the print bed (printed parts only)
                     "plate": plate.transforms[p.name].round(6).ravel().tolist() if p.name in plate.transforms else None,
                 }
                 for p in design

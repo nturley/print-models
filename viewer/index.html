@@ -220,8 +220,13 @@ async function load() {
   const partsEl = document.getElementById('parts');
   const palette = ['#4f7cac', '#5fa38a', '#e0a040', '#a066b0', '#c86a5a'];
   await Promise.all(report.parts.map(async (p, idx) => {
-    const geom = await loader.loadAsync(base + p.stl);
+    // assembled geometry, plus the as-printed geometry for the bed view
+    const [geom, printGeom] = await Promise.all([
+      loader.loadAsync(base + p.stl),
+      p.print_stl && p.plate ? loader.loadAsync(base + p.print_stl) : null,
+    ]);
     geom.computeVertexNormals();
+    printGeom?.computeVertexNormals();
     const color = new THREE.Color(p.color || palette[idx % palette.length]);
     const vitamin = p.kind === 'vitamin';
     const front = new THREE.MeshStandardMaterial({ color, roughness: vitamin ? 0.25 : 0.6, metalness: vitamin ? 0.6 : 0,
@@ -231,7 +236,7 @@ async function load() {
     const group = new THREE.Group();
     group.add(new THREE.Mesh(geom, front), new THREE.Mesh(geom, back));
     scene.add(group);
-    meshes[idx] = { ...p, group, mats: [front, back] };
+    meshes[idx] = { ...p, group, mats: [front, back], geoms: { assembly: geom, bed: printGeom || geom } };
 
     const row = document.createElement('div');
     row.className = 'part';
@@ -345,6 +350,7 @@ function setView(v) {
   for (const m of meshes) {
     m.group.matrixAutoUpdate = false;
     m.group.matrix.copy(v === 'bed' && m.plate ? new THREE.Matrix4().set(...m.plate) : identity);
+    for (const child of m.group.children) child.geometry = m.geoms[v];
     m.group.matrixWorldNeedsUpdate = true;
     m.row.classList.toggle('disabled', v === 'bed' && m.kind === 'vitamin');
     m.checkbox.disabled = v === 'bed' && m.kind === 'vitamin';

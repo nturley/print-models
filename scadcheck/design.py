@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
@@ -28,19 +30,44 @@ def openscad_exe() -> str:
     return exe
 
 
+def _openscad(source: Path, defines: dict, out: Path) -> None:
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cmd = [openscad_exe(), "-o", str(out)]
+    for k, v in defines.items():
+        cmd += ["-D", f"{k}={json.dumps(v) if isinstance(v, str) else v}"]
+    cmd.append(str(source))
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0 or not out.exists():
+        raise RuntimeError(f"openscad failed for {source} {defines}:\n{result.stderr}")
+
+
+def scad(path: str, print: str | None = None, **defines) -> dict:
+    """Part spec for Design(parts=...): render `path` with `-D` defines for the
+    assembled position, and optionally a separate `print` file for the geometry that
+    actually gets sliced (e.g. a part file that renders in print orientation).
+
+        scad("motorCar.scad", part="gear1", print="parts/gear1.scad")
+    """
+    return {"scad": path, "print": print, "defines": defines}
+
+
 @dataclass
 class Part:
     name: str
-    source: Path  # .scad file that renders this part standalone
+    source: Path  # .scad file that renders this part in its assembled position
     stl: Path
     kind: str = "part"  # "part" (printed) or "vitamin" (off-the-shelf hardware)
     color: str | None = None
-    # How the part goes on the bed, as OpenSCAD rotate([x, y, z]) degrees from its
-    # assembly orientation. The bed layout then drops it onto z=0.
+    defines: dict = field(default_factory=dict)  # -D overrides for `source`
+    print_source: Path | None = None  # .scad that renders the printed geometry, if not `source`
+    print_raw: Path | None = None  # where print_source renders to
+    # How the part goes on the bed, as OpenSCAD rotate([x, y, z]) degrees, applied to
+    # the print geometry (print_source if set, else the assembled part).
     print_rotation: tuple[float, float, float] = (0, 0, 0)
 
     @cached_property
     def mesh(self) -> trimesh.Trimesh:
+        """The part in its assembled position."""
         return trimesh.load(self.stl, force="mesh")
 
     @property
@@ -51,11 +78,24 @@ class Part:
 
     @cached_property
     def print_mesh(self) -> trimesh.Trimesh:
-        """The part in print orientation, resting on z=0."""
-        m = self.mesh.copy()
+        """The part as printed: print orientation, centred in x/y, resting on z=0."""
+        m = (trimesh.load(self.print_raw, force="mesh") if self.print_source else self.mesh).copy()
         m.apply_transform(self.print_matrix)
-        m.apply_translation([0, 0, -m.bounds[0, 2]])
+        lo, hi = m.bounds
+        m.apply_translation([-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, -lo[2]])
         return m
+
+    @property
+    def link_source(self) -> Path:
+        """The file a person edits for this part."""
+        return self.print_source or self.source
+
+    def jobs(self) -> list[tuple[Path, dict, Path]]:
+        """(scad file, -D defines, output stl) renders this part needs."""
+        out = [(self.source, self.defines, self.stl)]
+        if self.print_source:
+            out.append((self.print_source, {}, self.print_raw))
+        return out
 
     @cached_property
     def manifold(self) -> manifold3d.Manifold:
@@ -75,13 +115,13 @@ class Part:
 class Design:
     """A design folder plus the parts/vitamins to render from it.
 
-    `parts` and `vitamins` map a part name to a .scad path relative to `root`.
-    Each .scad file must render the part on its own (call its module at the bottom).
+    `parts` and `vitamins` map a part name to either a .scad path relative to `root`
+    (the file renders the part on its own, in assembled position) or a `scad(...)` spec.
     """
 
     root: Path
-    parts: dict[str, str]
-    vitamins: dict[str, str] = field(default_factory=dict)
+    parts: dict[str, str | dict]
+    vitamins: dict[str, str | dict] = field(default_factory=dict)
     defines: dict[str, float | str] = field(default_factory=dict)  # openscad -D overrides
     build_dir: Path | None = None
     printer: str = DEFAULT_PRINTER  # key into scadcheck.printers.PRINTERS
@@ -92,13 +132,17 @@ class Design:
         self.build_dir = Path(self.build_dir or self.root / "build").resolve()
         self._parts: dict[str, Part] = {}
         for kind, table in (("part", self.parts), ("vitamin", self.vitamins)):
-            for name, src in table.items():
+            for name, spec in table.items():
+                spec = spec if isinstance(spec, dict) else scad(spec)
                 sub = "" if kind == "part" else "vitamins"
                 self._parts[name] = Part(
                     name=name,
-                    source=self.root / src,
+                    source=self.root / spec["scad"],
                     stl=self.build_dir / sub / f"{name}.stl",
                     kind=kind,
+                    defines=spec["defines"],
+                    print_source=self.root / spec["print"] if spec.get("print") else None,
+                    print_raw=self.build_dir / "raw" / f"{name}.stl" if spec.get("print") else None,
                 )
         REGISTRY[self.root.name] = self
 
@@ -124,19 +168,17 @@ class Design:
         return layout_plate(self.printed(), self.printer_spec, self.plate_spacing)
 
     def render(self, force: bool = False) -> "Design":
-        """Render every part to STL; skip parts whose STL is newer than all .scad sources."""
+        """Render every part to STL, in parallel; skip outputs newer than all .scad sources."""
         newest_src = max(p.stat().st_mtime for p in self.root.rglob("*.scad"))
-        for part in self:
-            if not force and not self.defines and part.stl.exists() and part.stl.stat().st_mtime > newest_src:
-                continue
-            part.stl.parent.mkdir(parents=True, exist_ok=True)
-            cmd = [openscad_exe(), "-o", str(part.stl)]
-            for k, v in self.defines.items():
-                cmd += ["-D", f"{k}={v}"]
-            cmd.append(str(part.source))
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            if result.returncode != 0 or not part.stl.exists():
-                raise RuntimeError(f"openscad failed for {part.source}:\n{result.stderr}")
+        jobs = [
+            (src, {**defines, **self.defines}, out)
+            for part in self
+            for src, defines, out in part.jobs()
+            if force or self.defines or not out.exists() or out.stat().st_mtime <= newest_src
+        ]
+        with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as pool:
+            for future in [pool.submit(_openscad, *job) for job in jobs]:
+                future.result()
         return self
 
     def constants(self, filename: str = "constants.scad") -> dict[str, float]:
@@ -148,7 +190,7 @@ class Plate:
     """Printed parts arranged on one bed. The bed is centred on the origin, top at z=0."""
 
     printer: Printer
-    transforms: dict[str, np.ndarray]  # part name -> 4x4, assembly coords -> bed coords
+    transforms: dict[str, np.ndarray]  # part name -> 4x4 placing its print_mesh on the bed
     size: tuple[float, float, float]  # extent of the arrangement (x, y, z), mm
 
     @property
@@ -177,10 +219,10 @@ def layout_plate(parts: list[Part], printer: Printer, spacing: float) -> Plate:
 
     transforms = {}
     for p, sx, sy in spots:
-        lo =trimesh.transform_points(p.mesh.vertices, p.print_matrix).min(axis=0)
+        ex, ey, _ = p.print_mesh.extents  # print_mesh is centred in x/y on z=0
         move = np.eye(4)
-        move[:3, 3] = [sx - used_x / 2 - lo[0], sy - used_y / 2 - lo[1], -lo[2]]
-        transforms[p.name] = move @ p.print_matrix
+        move[:3, 3] = [sx + ex / 2 - used_x / 2, sy + ey / 2 - used_y / 2, 0]
+        transforms[p.name] = move
     return Plate(printer, transforms, (float(used_x), float(used_y), float(used_z)))
 
 
