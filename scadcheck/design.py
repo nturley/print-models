@@ -41,6 +41,19 @@ def _openscad(source: Path, defines: dict, out: Path) -> None:
         raise RuntimeError(f"openscad failed for {source} {defines}:\n{result.stderr}")
 
 
+def to_manifold(mesh: trimesh.Trimesh, name: str = "mesh") -> manifold3d.Manifold:
+    """manifold3d solid from a trimesh, for booleans, slicing and decompose()."""
+    solid = manifold3d.Manifold(
+        manifold3d.Mesh(
+            vert_properties=np.asarray(mesh.vertices, dtype=np.float32),
+            tri_verts=np.asarray(mesh.faces, dtype=np.uint32),
+        )
+    )
+    if solid.status() != manifold3d.Error.NoError:
+        raise ValueError(f"{name}: mesh is not a valid manifold ({solid.status()})")
+    return solid
+
+
 def scad(path: str, print: str | None = None, **defines) -> dict:
     """Part spec for Design(parts=...): render `path` with `-D` defines for the
     assembled position, and optionally a separate `print` file for the geometry that
@@ -99,16 +112,11 @@ class Part:
 
     @cached_property
     def manifold(self) -> manifold3d.Manifold:
-        m = self.mesh
-        solid = manifold3d.Manifold(
-            manifold3d.Mesh(
-                vert_properties=np.asarray(m.vertices, dtype=np.float32),
-                tri_verts=np.asarray(m.faces, dtype=np.uint32),
-            )
-        )
-        if solid.status() != manifold3d.Error.NoError:
-            raise ValueError(f"{self.name}: mesh is not a valid manifold ({solid.status()})")
-        return solid
+        return to_manifold(self.mesh, self.name)
+
+    @cached_property
+    def print_manifold(self) -> manifold3d.Manifold:
+        return to_manifold(self.print_mesh, f"{self.name} (print)")
 
 
 @dataclass

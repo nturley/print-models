@@ -1,3 +1,4 @@
+$fn = 20; // match spool-rack.scad; without it the wire holes print as 7-sided polygons
 
 spool_height = 20;
 spool_gap = 1;
