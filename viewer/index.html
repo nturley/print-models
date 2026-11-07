@@ -233,6 +233,12 @@ async function load() {
       transparent: vitamin, opacity: vitamin ? 0.55 : 1, side: THREE.FrontSide });
     // back faces in a darker shade read as the cut face when sectioning
     const back = new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(0.45), side: THREE.BackSide });
+    if (vitamin) {
+      // Vitamins often sit flush against a part (motor in its cradle), so their faces are
+      // coplanar with the part's and z-fight. Push vitamins slightly back in depth so the
+      // printed part wins wherever the surfaces coincide.
+      for (const mat of [front, back]) Object.assign(mat, { polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 2 });
+    }
     const group = new THREE.Group();
     group.add(new THREE.Mesh(geom, front), new THREE.Mesh(geom, back));
     scene.add(group);
