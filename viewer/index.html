@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Inspector</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #ffffff; --ink: #1d1f23; --muted: #6b7078; --line: #e2e2de;
+    --pass: #2f8f5b; --fail: #c4423a; --accent: #3a6ea5; --canvas: #eceae5;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16181b; --panel: #1e2125; --ink: #e6e7e9; --muted: #969ba3; --line: #2e3237;
+      --pass: #4cb67d; --fail: #e2645b; --accent: #6fa0d6; --canvas: #202327; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.45 system-ui, sans-serif; display: grid;
+    grid-template-columns: 340px 1fr; }
+  aside { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 16px; }
+  main { position: relative; min-width: 0; }
+  canvas { display: block; width: 100%; height: 100%; }
+  h1 { font-size: 17px; margin: 0 0 2px; }
+  h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 8px; }
+  .sub { color: var(--muted); font-size: 12px; }
+  label.part { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+  .tag { font-size: 11px; color: var(--muted); margin-left: auto; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; background: none; color: var(--ink); padding: 4px 10px; cursor: pointer; font: inherit; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  input[type=range] { flex: 1; }
+  .summary { font-weight: 600; margin-bottom: 6px; }
+  .summary.ok { color: var(--pass); } .summary.bad { color: var(--fail); }
+  .test { border-top: 1px solid var(--line); padding: 7px 0; }
+  .test .head { display: flex; gap: 6px; align-items: baseline; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; transform: translateY(-1px); }
+  .passed .dot { background: var(--pass); } .failed .dot, .error .dot { background: var(--fail); }
+  .skipped .dot { background: var(--muted); }
+  .test .name { font-weight: 500; word-break: break-word; }
+  .test .msg { color: var(--fail); font-size: 12px; margin: 2px 0 0 14px; word-break: break-word; }
+  .meas { margin: 3px 0 0 14px; padding: 3px 6px; border-radius: 5px; display: flex; gap: 6px; font-size: 12px; }
+  .meas .v { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .meas .lim { color: var(--muted); }
+  .meas.pickable { cursor: pointer; }
+  .meas.pickable:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .meas.active { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  .hint { position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--muted); }
+  .readout { position: absolute; right: 12px; top: 12px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 10px; font-variant-numeric: tabular-nums; }
+  .error-box { color: var(--fail); white-space: pre-wrap; }
+  select { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; grid-template-rows: 55vh auto; }
+    main { grid-row: 1; } aside { grid-row: 2; border-right: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+<script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+</script>
+</head>
+<body>
+<aside>
+  <h1 id="title">Design Inspector</h1>
+  <div class="sub" id="generated"></div>
+
+  <h2>Parts</h2>
+  <div id="parts"></div>
+
+  <h2>Section</h2>
+  <div class="row" style="margin-bottom:8px">
+    <div class="seg" id="axis">
+      <button data-axis="off" class="on">Off</button><button data-axis="x">X</button><button data-axis="y">Y</button><button data-axis="z">Z</button>
+    </div>
+    <label class="row" style="gap:4px"><input type="checkbox" id="flip"> flip</label>
+  </div>
+  <div class="row"><input type="range" id="cut" min="0" max="1000" value="500" disabled><span id="cutval" class="sub" style="width:56px;text-align:right"></span></div>
+
+  <h2>Measure</h2>
+  <div class="row"><div class="seg" id="mode"><button data-mode="orbit" class="on">Orbit</button><button data-mode="measure">Click to measure</button></div></div>
+
+  <h2>Checks</h2>
+  <div id="tests"></div>
+</aside>
+<main>
+  <canvas id="c"></canvas>
+  <div class="readout" id="readout" hidden></div>
+  <div class="hint" id="hint">Drag to orbit · right-drag to pan · scroll to zoom · click a measurement to show it</div>
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+
+const params = new URLSearchParams(location.search);
+const design = params.get('design') || 'ball-bearing';
+const base = `../${design}/build/`;
+const fmt = (v, u = 'mm') => `${(+v).toFixed(3).replace(/\.?0+$/, '') || '0'} ${u}`;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// ---------- scene ----------
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.localClippingEnabled = true;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 5000);
+camera.up.set(0, 0, 1); // OpenSCAD is Z-up
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x777788, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(1, -1.5, 2); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.5); fill.position.set(-1, 1, -0.5); scene.add(fill);
+const overlay = new THREE.Group(); scene.add(overlay);
+
+function applyTheme() { scene.background = new THREE.Color(css('--canvas')); }
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+function resize() {
+  const { clientWidth: w, clientHeight: h } = canvas.parentElement;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas.parentElement);
+
+// ---------- section plane ----------
+const plane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
+const clip = [plane];
+let axis = 'off';
+const box = new THREE.Box3();
+function updatePlane() {
+  const cut = document.getElementById('cut');
+  cut.disabled = axis === 'off';
+  for (const m of meshes) for (const mat of m.mats) mat.clippingPlanes = axis === 'off' ? [] : clip;
+  if (axis === 'off') { document.getElementById('cutval').textContent = ''; return; }
+  const i = { x: 0, y: 1, z: 2 }[axis];
+  const lo = box.min.getComponent(i), hi = box.max.getComponent(i);
+  const pos = lo + (hi - lo) * cut.value / 1000;
+  const flip = document.getElementById('flip').checked ? -1 : 1;
+  // three.js keeps the side the normal points to; keep +axis so the cut faces the default camera
+  plane.normal.set(0, 0, 0).setComponent(i, flip);
+  plane.constant = -flip * pos;
+  document.getElementById('cutval').textContent = fmt(pos);
+}
+document.getElementById('axis').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  axis = b.dataset.axis;
+  for (const x of e.currentTarget.children) x.classList.toggle('on', x === b);
+  updatePlane();
+});
+document.getElementById('cut').addEventListener('input', updatePlane);
+document.getElementById('flip').addEventListener('change', updatePlane);
+
+// ---------- overlay helpers ----------
+function marker(p, color) {
+  const s = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color, depthTest: false }));
+  s.position.copy(p); s.renderOrder = 10; s.userData.marker = true; return s;
+}
+function drawSegment(a, b, color = 0xff3366) {
+  overlay.clear();
+  const pa = new THREE.Vector3(...a), pb = new THREE.Vector3(...b);
+  const g = new THREE.BufferGeometry().setFromPoints([pa, pb]);
+  const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color, depthTest: false }));
+  line.renderOrder = 10;
+  overlay.add(line, marker(pa, color), marker(pb, color));
+  scaleMarkers();
+}
+function scaleMarkers() {
+  const r = camera.position.distanceTo(controls.target) * 0.006;
+  overlay.traverse(o => { if (o.userData.marker) o.scale.setScalar(r); });
+}
+const readout = document.getElementById('readout');
+function showReadout(text) { readout.textContent = text; readout.hidden = !text; }
+
+// ---------- load design ----------
+const meshes = [];
+const loader = new STLLoader();
+
+async function load() {
+  let report;
+  try {
+    const res = await fetch(base + 'report.json');
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    report = await res.json();
+  } catch (err) {
+    document.getElementById('tests').innerHTML =
+      `<div class="error-box">Couldn't load ${base}report.json (${err.message}).\n\nRun the tests first:\n  uv run pytest ${design}\n\nand serve the repo root over http:\n  uv run python -m http.server</div>`;
+    return;
+  }
+  document.title = `${report.design} · Design Inspector`;
+  document.getElementById('title').textContent = report.design;
+  document.getElementById('generated').textContent = `Report from ${report.generated.replace('T', ' ')}`;
+
+  const partsEl = document.getElementById('parts');
+  const palette = ['#4f7cac', '#5fa38a', '#e0a040', '#a066b0', '#c86a5a'];
+  await Promise.all(report.parts.map(async (p, idx) => {
+    const geom = await loader.loadAsync(base + p.stl);
+    geom.computeVertexNormals();
+    const color = new THREE.Color(p.color || palette[idx % palette.length]);
+    const vitamin = p.kind === 'vitamin';
+    const front = new THREE.MeshStandardMaterial({ color, roughness: vitamin ? 0.25 : 0.6, metalness: vitamin ? 0.6 : 0,
+      transparent: vitamin, opacity: vitamin ? 0.55 : 1, side: THREE.FrontSide });
+    // back faces in a darker shade read as the cut face when sectioning
+    const back = new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(0.45), side: THREE.BackSide });
+    const group = new THREE.Group();
+    group.add(new THREE.Mesh(geom, front), new THREE.Mesh(geom, back));
+    scene.add(group);
+    meshes[idx] = { ...p, group, mats: [front, back] };
+
+    const row = document.createElement('label');
+    row.className = 'part';
+    row.innerHTML = `<input type="checkbox" checked><span class="swatch" style="background:${'#' + color.getHexString()}"></span>${p.name}<span class="tag">${p.kind}</span>`;
+    row.querySelector('input').addEventListener('change', e => { group.visible = e.target.checked; });
+    partsEl.appendChild(row);
+  }));
+  // keep sidebar order matching the report
+  [...partsEl.children].sort((a, b) =>
+    report.parts.findIndex(p => a.textContent.startsWith(p.name)) - report.parts.findIndex(p => b.textContent.startsWith(p.name))
+  ).forEach(el => partsEl.appendChild(el));
+
+  box.makeEmpty(); for (const m of meshes) box.expandByObject(m.group);
+  const size = box.getSize(new THREE.Vector3()).length(), center = box.getCenter(new THREE.Vector3());
+  controls.target.copy(center);
+  camera.position.copy(center).add(new THREE.Vector3(0.9, -1.3, 1.0).multiplyScalar(size * 0.9));
+  camera.near = size / 1000; camera.far = size * 50; camera.updateProjectionMatrix();
+  updatePlane();
+  renderTests(report.tests);
+}
+
+function renderTests(tests) {
+  const el = document.getElementById('tests');
+  const failed = tests.filter(t => t.outcome !== 'passed' && t.outcome !== 'skipped').length;
+  el.innerHTML = `<div class="summary ${failed ? 'bad' : 'ok'}">${failed ? `${failed} of ${tests.length} failing` : `All ${tests.length} passing`}</div>`;
+  tests.sort((a, b) => (a.outcome === 'passed') - (b.outcome === 'passed'));
+  for (const t of tests) {
+    const div = document.createElement('div');
+    div.className = `test ${t.outcome}`;
+    div.innerHTML = `<div class="head"><span class="dot"></span><span class="name"></span></div>`;
+    div.querySelector('.name').textContent = t.name;
+    if (t.doc) div.querySelector('.name').title = t.doc;
+    if (t.message) { const m = document.createElement('div'); m.className = 'msg'; m.textContent = t.message; div.appendChild(m); }
+    for (const m of t.measurements) {
+      const row = document.createElement('div');
+      row.className = 'meas' + (m.points ? ' pickable' : '');
+      const lim = [m.min != null ? `≥ ${m.min}` : '', m.max != null ? `≤ ${m.max}` : ''].filter(Boolean).join(', ');
+      row.innerHTML = `<span class="l"></span><span class="v">${fmt(m.value, m.units)} <span class="lim">${lim}</span></span>`;
+      row.querySelector('.l').textContent = m.label;
+      if (m.points) row.addEventListener('click', () => {
+        document.querySelectorAll('.meas.active').forEach(x => x.classList.remove('active'));
+        row.classList.add('active');
+        drawSegment(...m.points);
+        showReadout(`${m.label}: ${fmt(m.value, m.units)}`);
+        const mid = new THREE.Vector3(...m.points[0]).add(new THREE.Vector3(...m.points[1])).multiplyScalar(0.5);
+        const offset = camera.position.clone().sub(controls.target);
+        controls.target.copy(mid);
+        camera.position.copy(mid).add(offset.setLength(Math.max(offset.length() * 0.35, 8)));
+      });
+      div.appendChild(row);
+    }
+    el.appendChild(div);
+  }
+}
+
+// ---------- click to measure ----------
+let mode = 'orbit', picks = [];
+document.getElementById('mode').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  mode = b.dataset.mode; picks = [];
+  for (const x of e.currentTarget.children) x.classList.toggle('on', x === b);
+  document.getElementById('hint').textContent = mode === 'measure'
+    ? 'Click two points on the model to measure the distance between them'
+    : 'Drag to orbit · right-drag to pan · scroll to zoom · click a measurement to show it';
+});
+const ray = new THREE.Raycaster();
+let down = null;
+canvas.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointerup', e => {
+  if (mode !== 'measure' || !down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
+  const r = canvas.getBoundingClientRect();
+  ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  const targets = meshes.filter(m => m.group.visible).map(m => m.group.children[0]);
+  const hit = ray.intersectObjects(targets).find(h => axis === 'off' || plane.distanceToPoint(h.point) >= 0);
+  if (!hit) return;
+  picks.push(hit.point.toArray().map(v => +v.toFixed(4)));
+  if (picks.length === 1) { overlay.clear(); overlay.add(marker(hit.point, 0x3399ff)); scaleMarkers(); showReadout('Pick a second point'); }
+  else {
+    drawSegment(picks[0], picks[1], 0x3399ff);
+    const [a, b] = picks.map(p => new THREE.Vector3(...p));
+    const d = b.clone().sub(a);
+    showReadout(`${fmt(d.length())}   (Δx ${d.x.toFixed(3)}, Δy ${d.y.toFixed(3)}, Δz ${d.z.toFixed(3)})`);
+    picks = [];
+  }
+});
+
+renderer.setAnimationLoop(() => { controls.update(); scaleMarkers(); renderer.render(scene, camera); });
+load();
+</script>
+</body>
+</html>

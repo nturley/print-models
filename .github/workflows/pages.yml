@@ -1,0 +1,63 @@
+name: design checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenSCAD
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends openscad
+          openscad --version
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Keep going when tests fail so the published report shows the failures;
+      # the last step fails the job afterwards.
+      - name: Run design tests
+        id: tests
+        continue-on-error: true
+        run: uv run pytest -v
+
+      - name: Build site
+        run: uv run python -m scadcheck.site _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Fail if tests failed
+        if: steps.tests.outcome != 'success'
+        run: exit 1
+
+  deploy:
+    # Publish only from main, even when tests fail, so the site shows the current state.
+    if: github.ref == 'refs/heads/main' && !cancelled() && needs.test.result != 'skipped'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

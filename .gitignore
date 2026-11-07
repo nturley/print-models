@@ -1,1 +1,4 @@
 *.stl
+build/
+__pycache__/
+_site/
