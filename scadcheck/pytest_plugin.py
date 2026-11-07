@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from .design import REGISTRY
+from .exports import export_downloads, repo_info
 from .geom import Distance
 
 _measurements: dict[str, list[dict]] = {}  # nodeid -> measurements
@@ -77,9 +78,14 @@ def pytest_sessionfinish(session):
             continue
         plate = design.plate
         printer = plate.printer
+        repo_root = design.root.parent
+        readme = design.root / "README.md"
         report = {
             "design": name,
             "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "repo": repo_info(repo_root),
+            "readme": readme.relative_to(repo_root).as_posix() if readme.exists() else None,
+            "downloads": export_downloads(design),
             "printer": {
                 "name": printer.name,
                 "volume": list(printer.volume),
@@ -91,6 +97,8 @@ def pytest_sessionfinish(session):
                     "name": p.name,
                     "kind": p.kind,
                     "stl": p.stl.relative_to(design.build_dir).as_posix(),
+                    "source": p.source.relative_to(repo_root).as_posix(),
+                    "print_stl": f"print/{p.name}.stl" if p.kind == "part" else None,
                     "color": p.color,
                     "size": [round(v, 3) for v in p.mesh.extents],
                     # row-major 4x4 placing the part on the print bed (printed parts only)

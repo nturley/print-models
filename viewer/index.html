@@ -24,7 +24,14 @@
   h1 { font-size: 17px; margin: 0 0 2px; }
   h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 20px 0 8px; }
   .sub { color: var(--muted); font-size: 12px; }
-  label.part { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+  a { color: var(--accent); }
+  .links { display: flex; gap: 12px; align-items: baseline; margin-top: 6px; font-size: 12px; }
+  .part { display: flex; align-items: center; gap: 8px; padding: 3px 3px 3px 0; }
+  .part label { display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 0; }
+  .plinks { display: flex; gap: 6px; font-size: 11px; flex: none; }
+  .plinks a { text-decoration: none; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+  .plinks a:hover { border-color: var(--accent); }
+  .dl { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; padding: 3px 0; }
   .swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; }
   .tag { font-size: 11px; color: var(--muted); margin-left: auto; }
   .row { display: flex; gap: 8px; align-items: center; }
@@ -54,7 +61,7 @@
   .bedinfo { position: absolute; left: 12px; top: 12px; background: var(--panel); border: 1px solid var(--line);
     border-radius: 6px; padding: 8px 12px; font-size: 12px; line-height: 1.6; }
   .bedinfo b { font-size: 13px; }
-  label.part.disabled { opacity: .45; cursor: default; }
+  .part.disabled label { opacity: .45; cursor: default; }
   .error-box { color: var(--fail); white-space: pre-wrap; }
   select { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
   @media (max-width: 760px) {
@@ -73,12 +80,16 @@
 <aside>
   <h1 id="title">Design Inspector</h1>
   <div class="sub" id="generated"></div>
+  <div class="links" id="links"></div>
 
   <h2>View</h2>
   <div class="seg" id="view"><button data-view="assembly" class="on">Assembly</button><button data-view="bed">Print bed</button></div>
 
   <h2>Parts</h2>
   <div id="parts"></div>
+
+  <h2 id="downloads-h" hidden>Downloads</h2>
+  <div id="downloads"></div>
 
   <h2>Section</h2>
   <div class="row" style="margin-bottom:8px">
@@ -222,24 +233,57 @@ async function load() {
     scene.add(group);
     meshes[idx] = { ...p, group, mats: [front, back] };
 
-    const row = document.createElement('label');
+    const row = document.createElement('div');
     row.className = 'part';
-    row.innerHTML = `<input type="checkbox" checked><span class="swatch" style="background:${'#' + color.getHexString()}"></span>${p.name}<span class="tag"></span>`;
+    row.dataset.index = idx;
+    row.innerHTML = `<label><input type="checkbox" checked><span class="swatch" style="background:${'#' + color.getHexString()}"></span><span class="pname"></span></label><span class="tag"></span><span class="plinks"></span>`;
+    row.querySelector('.pname').textContent = p.name;
+    const plinks = row.querySelector('.plinks');
+    if (report.repo && p.source) plinks.append(link(`${report.repo.url}/blob/${report.repo.ref}/${p.source}`, '.scad', `${p.source} on GitHub`));
+    if (p.print_stl) plinks.append(link(base + p.print_stl, '.stl', `Download ${p.name}.stl (print orientation)`, `${p.name}.stl`));
     const dims = p.size ? p.size.map(v => +v.toFixed(1)).join(' × ') + ' mm' : '';
     meshes[idx].row = row;
-    meshes[idx].tags = { assembly: p.kind, bed: vitamin ? 'not printed' : dims };
+    meshes[idx].tags = { assembly: vitamin ? 'vitamin' : '', bed: vitamin ? 'not printed' : dims };
     meshes[idx].checkbox = row.querySelector('input');
     meshes[idx].checkbox.addEventListener('change', updateVisibility);
     partsEl.appendChild(row);
   }));
   buildBed(report);
   // keep sidebar order matching the report
-  [...partsEl.children].sort((a, b) =>
-    report.parts.findIndex(p => a.textContent.startsWith(p.name)) - report.parts.findIndex(p => b.textContent.startsWith(p.name))
-  ).forEach(el => partsEl.appendChild(el));
+  [...partsEl.children].sort((a, b) => a.dataset.index - b.dataset.index).forEach(el => partsEl.appendChild(el));
+  renderLinks(report);
 
   renderTests(report.tests);
   setView(location.hash === '#bed' ? 'bed' : 'assembly');
+}
+
+// ---------- source links and downloads ----------
+function link(href, text, title, download) {
+  const a = document.createElement('a');
+  a.href = href; a.textContent = text;
+  if (title) a.title = title;
+  if (download) a.download = download; else { a.target = '_blank'; a.rel = 'noopener'; }
+  return a;
+}
+const kb = n => n > 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} KB`;
+
+function renderLinks(report) {
+  const links = document.getElementById('links');
+  const r = report.repo;
+  if (r) {
+    links.append(link(`${r.url}/tree/${r.ref}/${report.design}`, 'Source on GitHub'));
+    if (report.readme) links.append(link(`${r.url}/blob/${r.ref}/${report.readme}`, 'README'));
+    const sha = document.createElement('span'); sha.className = 'sub'; sha.textContent = `@ ${r.ref.slice(0, 7)}`;
+    sha.title = 'Commit these files were built from'; links.append(sha);
+  }
+  const dl = document.getElementById('downloads');
+  for (const d of report.downloads || []) {
+    const row = document.createElement('div'); row.className = 'dl';
+    row.append(link(base + d.file, d.label, `Download ${d.file}`, d.file));
+    const size = document.createElement('span'); size.className = 'sub'; size.textContent = kb(d.bytes);
+    row.append(size); dl.append(row);
+  }
+  document.getElementById('downloads-h').hidden = !dl.children.length;
 }
 
 // ---------- views: assembly vs print bed ----------

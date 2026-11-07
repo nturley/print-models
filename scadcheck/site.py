@@ -32,17 +32,20 @@ PAGE = """<!doctype html>
   main {{ max-width:720px; margin:0 auto; padding:40px 16px; }}
   h1 {{ font-size:22px; margin:0 0 4px; }}
   p {{ color:var(--muted); margin:0 0 24px; }}
-  a.card {{ display:flex; align-items:center; gap:12px; padding:14px 16px; margin-bottom:8px; background:var(--panel);
-    border:1px solid var(--line); border-radius:8px; color:inherit; text-decoration:none; }}
-  a.card:hover {{ border-color:var(--accent); }}
-  .name {{ font-weight:600; }}
+  a {{ color:var(--accent); }}
+  .card {{ position:relative; display:flex; align-items:center; gap:16px; padding:14px 16px; margin-bottom:8px;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; }}
+  .card:hover {{ border-color:var(--accent); }}
+  .card a.name {{ font-weight:600; color:inherit; text-decoration:none; }}
+  .card a.name::after {{ content:""; position:absolute; inset:0; }}  /* whole card opens the viewer */
+  .card a.src {{ position:relative; z-index:1; font-size:13px; }}
   .status {{ margin-left:auto; font-size:13px; }}
   .ok {{ color:var(--pass); }} .bad {{ color:var(--fail); }}
 </style>
 </head>
 <body><main>
 <h1>Print Models</h1>
-<p>Design checks for 3D-printable OpenSCAD models. Built {generated}.</p>
+<p>Design checks for 3D-printable OpenSCAD models. Built {generated}.{repo}</p>
 {cards}
 </main></body>
 </html>
@@ -53,27 +56,43 @@ def build(out: Path) -> list[str]:
     if out.exists():
         shutil.rmtree(out)
     shutil.copytree(ROOT / "viewer", out / "viewer")
-    cards, names = [], []
+    cards, names, repo_url = [], [], None
     for report_path in sorted(ROOT.glob("*/build/report.json")):
         design = report_path.parent.parent.name
         report = json.loads(report_path.read_text(encoding="utf-8"))
         dest = out / design / "build"
         dest.mkdir(parents=True)
         shutil.copy2(report_path, dest / "report.json")
-        for part in report["parts"]:
-            (dest / part["stl"]).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(report_path.parent / part["stl"], dest / part["stl"])
+        files = [part["stl"] for part in report["parts"]]
+        files += [part["print_stl"] for part in report["parts"] if part.get("print_stl")]
+        files += [d["file"] for d in report.get("downloads", [])]
+        for f in files:
+            (dest / f).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(report_path.parent / f, dest / f)
         tests = report["tests"]
         failed = sum(t["outcome"] not in ("passed", "skipped") for t in tests)
         status = f'<span class="bad">{failed} of {len(tests)} failing</span>' if failed else f'<span class="ok">{len(tests)} passing</span>'
-        cards.append(
-            f'<a class="card" href="viewer/?design={html.escape(design)}"><span class="name">{html.escape(design)}</span>'
-            f'<span class="status">{status}</span></a>'
+        repo = report.get("repo")
+        source = (
+            f'<a class="src" href="{html.escape(repo["url"])}/tree/{repo["ref"]}/{html.escape(design)}">source</a>'
+            if repo else ""
         )
+        cards.append(
+            f'<div class="card"><a class="name" href="viewer/?design={html.escape(design)}">{html.escape(design)}</a>'
+            f'<span class="status">{status}</span>{source}</div>'
+        )
+        repo_url = repo_url or (repo and repo["url"])
         names.append(design)
     generated = max((json.loads(p.read_text(encoding="utf-8"))["generated"] for p in ROOT.glob("*/build/report.json")), default="")
+    repo_line = (
+        f' Source: <a href="{html.escape(repo_url)}">{html.escape(repo_url.removeprefix("https://"))}</a>.' if repo_url else ""
+    )
     (out / "index.html").write_text(
-        PAGE.format(cards="\n".join(cards) or "<p>No designs have test reports yet.</p>", generated=generated.replace("T", " ")),
+        PAGE.format(
+            cards="\n".join(cards) or "<p>No designs have test reports yet.</p>",
+            generated=generated.replace("T", " "),
+            repo=repo_line,
+        ),
         encoding="utf-8",
     )
     (out / ".nojekyll").touch()
