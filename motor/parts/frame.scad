@@ -1,6 +1,7 @@
 include <../vitamins/gear-motor.scad>
-include <../vendor/flexbatter.scad>
+use <../vitamins/switch.scad>
 
+epsilon=.001;
 
 //parameters
 enclosure_thickness = 1;
@@ -76,6 +77,10 @@ module frame() {
             rotate([45, 0, 90])
             cube([50, .4, .4], center=true);
         }
+
+        translate([-13,-40,-1])
+        scale([1.4,1,1])
+        cylinder(h=10, r=10);
     }
     
     difference() {
@@ -87,24 +92,44 @@ module frame() {
             cube([50, .4, .4], center=true);
         }
     }
-    
+
     difference() {
-        translate([-21.5,-43,0])
-        rotate([0,0,90])
-        flexbatterAAx1();
-        
-        translate([-21.5,7.4,9])
-        rotate([-45,0,0])
-        motor_wire_jumper();
-        
-        translate([-21.5,-42,9])
-        rotate([45,0,0])
-        motor_wire_jumper();
+        translate([-30,-27,0])
+        cube([18,20,3]);
+
+        translate([-30,-27,-epsilon])
+        scale([2.75,1,1])
+        cylinder(h=3+2*epsilon, r=6.5);
+
+        translate([-30,-7,-epsilon])
+        scale([2.75,1,1])
+        cylinder(h=3+2*epsilon, r=6.5);
     }
+
+    translate([-21, -17, 3])
+    cylinder(h=1.5, r=.9);
     
-    translate([-21.5,7.4,9])
-    rotate([-45,0,0])
-    wire_holder();
+
+    translate([18.5,-17,2.5])
+    cube([13,20,5], center=true);
+
+    translate([23.5,-17,13])
+    difference() {
+        cube([3,20,26], center=true);
+
+        rotate([0,90,0])
+        translate([-17,0,-2.5])
+        cylinder(h=5, r=9.4);
+    }
+
+    translate([14,-17,13])
+    difference() {
+        cube([3,20,26], center=true);
+
+        rotate([0,90,0])
+        translate([-17,0,-2.5])
+        cylinder(h=5, r=9.4);
+    }
 }
 
 
@@ -143,3 +168,4 @@ module freeWheelClips() {
 }
 
 frame();
+

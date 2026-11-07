@@ -2,6 +2,7 @@ $fn=50;
 
 include <vitamins/gear-motor.scad>
 include <vitamins/batteryAA.scad>
+use <vitamins/batteryAAHolder.scad>
 use <parts/driveShaft.scad>
 use <parts/driveWheel.scad>
 use <parts/frame.scad>
@@ -25,14 +26,6 @@ module motorCar() {
     translate([0,-1,13.5])
     rotate([90,90,0])
     %motor();
-    
-    translate([-21.5,7.4,9])
-    rotate([-45,0,0])
-    %motor_wire_jumper();
-    
-    translate([-21.5,-42,9])
-    rotate([45,0,0])
-    %motor_wire_jumper();
 
     translate([8.5,-shaft_length+4.3,enclosure_outer_radius])
     rotate([90,0,0])
@@ -54,9 +47,13 @@ module motorCar() {
     rotate([90,0,0])
     freeWheel();
     
-    translate([-21,-42,10])
-    rotate([270,0,0])
-    %batteryAA();
+    //translate([-21,-42,10])
+    //rotate([270,0,0])
+    //%batteryAA();
+
+    translate([-12.5,-45.5,3])
+    rotate([0,0,90])
+    %batteryAAHolder();
 }
 
 motorCar();
