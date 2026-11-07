@@ -298,10 +298,13 @@ function buildBed(report) {
   const outline = pr.plate || [[-W/2 - 8, D/2 + 8], [W/2 + 8, D/2 + 8], [W/2 + 8, -D/2 - 8], [-W/2 - 8, -D/2 - 8]];
   const shape = new THREE.Shape(outline.map(([x, y]) => new THREE.Vector2(x, y)));
   const plateMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 1.5, bevelEnabled: false }),
-    new THREE.MeshStandardMaterial({ color: 0x2b2d31, roughness: 0.55, metalness: 0.3 }));
+    // see-through (and no depth writes) so parts stay visible when orbiting underneath
+    new THREE.MeshStandardMaterial({ color: 0x2b2d31, roughness: 0.55, metalness: 0.3,
+      transparent: true, opacity: 0.4, depthWrite: false }));
   plateMesh.position.z = -1.9; // top face at z = -0.4
   // printable area, with a 10 mm grid
-  const area = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ color: 0x3a3d43, roughness: 0.8 }));
+  const area = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ color: 0x3a3d43, roughness: 0.8,
+    transparent: true, opacity: 0.35, depthWrite: false })); // top side only: from below you look through just the plate
   area.position.z = -0.2;
   const grid = new THREE.GridHelper(W, Math.round(W / 10), 0x8a8f98, 0x50545b);
   grid.rotation.x = Math.PI / 2; grid.scale.set(1, 1, D / W); grid.position.z = -0.05;
