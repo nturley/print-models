@@ -75,15 +75,26 @@ def pytest_sessionfinish(session):
         design = REGISTRY.get(name)
         if design is None:
             continue
+        plate = design.plate
+        printer = plate.printer
         report = {
             "design": name,
             "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "printer": {
+                "name": printer.name,
+                "volume": list(printer.volume),
+                "plate": [list(pt) for pt in printer.plate] if printer.plate else None,
+            },
+            "plate_size": [round(v, 3) for v in plate.size],
             "parts": [
                 {
                     "name": p.name,
                     "kind": p.kind,
                     "stl": p.stl.relative_to(design.build_dir).as_posix(),
                     "color": p.color,
+                    "size": [round(v, 3) for v in p.mesh.extents],
+                    # row-major 4x4 placing the part on the print bed (printed parts only)
+                    "plate": plate.transforms[p.name].round(6).ravel().tolist() if p.name in plate.transforms else None,
                 }
                 for p in design
             ],

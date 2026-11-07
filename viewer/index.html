@@ -51,6 +51,10 @@
     border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--muted); }
   .readout { position: absolute; right: 12px; top: 12px; background: var(--panel); border: 1px solid var(--line);
     border-radius: 6px; padding: 6px 10px; font-variant-numeric: tabular-nums; }
+  .bedinfo { position: absolute; left: 12px; top: 12px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 8px 12px; font-size: 12px; line-height: 1.6; }
+  .bedinfo b { font-size: 13px; }
+  label.part.disabled { opacity: .45; cursor: default; }
   .error-box { color: var(--fail); white-space: pre-wrap; }
   select { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
   @media (max-width: 760px) {
@@ -69,6 +73,9 @@
 <aside>
   <h1 id="title">Design Inspector</h1>
   <div class="sub" id="generated"></div>
+
+  <h2>View</h2>
+  <div class="seg" id="view"><button data-view="assembly" class="on">Assembly</button><button data-view="bed">Print bed</button></div>
 
   <h2>Parts</h2>
   <div id="parts"></div>
@@ -91,6 +98,7 @@
 <main>
   <canvas id="c"></canvas>
   <div class="readout" id="readout" hidden></div>
+  <div class="bedinfo" id="bedinfo" hidden></div>
   <div class="hint" id="hint">Drag to orbit · right-drag to pan · scroll to zoom · click a measurement to show it</div>
 </main>
 
@@ -216,23 +224,102 @@ async function load() {
 
     const row = document.createElement('label');
     row.className = 'part';
-    row.innerHTML = `<input type="checkbox" checked><span class="swatch" style="background:${'#' + color.getHexString()}"></span>${p.name}<span class="tag">${p.kind}</span>`;
-    row.querySelector('input').addEventListener('change', e => { group.visible = e.target.checked; });
+    row.innerHTML = `<input type="checkbox" checked><span class="swatch" style="background:${'#' + color.getHexString()}"></span>${p.name}<span class="tag"></span>`;
+    const dims = p.size ? p.size.map(v => +v.toFixed(1)).join(' × ') + ' mm' : '';
+    meshes[idx].row = row;
+    meshes[idx].tags = { assembly: p.kind, bed: vitamin ? 'not printed' : dims };
+    meshes[idx].checkbox = row.querySelector('input');
+    meshes[idx].checkbox.addEventListener('change', updateVisibility);
     partsEl.appendChild(row);
   }));
+  buildBed(report);
   // keep sidebar order matching the report
   [...partsEl.children].sort((a, b) =>
     report.parts.findIndex(p => a.textContent.startsWith(p.name)) - report.parts.findIndex(p => b.textContent.startsWith(p.name))
   ).forEach(el => partsEl.appendChild(el));
 
-  box.makeEmpty(); for (const m of meshes) box.expandByObject(m.group);
-  const size = box.getSize(new THREE.Vector3()).length(), center = box.getCenter(new THREE.Vector3());
-  controls.target.copy(center);
-  camera.position.copy(center).add(new THREE.Vector3(0.9, -1.3, 1.0).multiplyScalar(size * 0.9));
-  camera.near = size / 1000; camera.far = size * 50; camera.updateProjectionMatrix();
-  updatePlane();
   renderTests(report.tests);
+  setView(location.hash === '#bed' ? 'bed' : 'assembly');
 }
+
+// ---------- views: assembly vs print bed ----------
+let view = 'assembly';
+const bed = new THREE.Group(); bed.visible = false; scene.add(bed);
+const identity = new THREE.Matrix4();
+
+function buildBed(report) {
+  const pr = report.printer; if (!pr) return;
+  const [W, D, H] = pr.volume;
+  // build plate outline (or a plain margin around the printable area)
+  const outline = pr.plate || [[-W/2 - 8, D/2 + 8], [W/2 + 8, D/2 + 8], [W/2 + 8, -D/2 - 8], [-W/2 - 8, -D/2 - 8]];
+  const shape = new THREE.Shape(outline.map(([x, y]) => new THREE.Vector2(x, y)));
+  const plateMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 1.5, bevelEnabled: false }),
+    new THREE.MeshStandardMaterial({ color: 0x2b2d31, roughness: 0.55, metalness: 0.3 }));
+  plateMesh.position.z = -1.9; // top face at z = -0.4
+  // printable area, with a 10 mm grid
+  const area = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ color: 0x3a3d43, roughness: 0.8 }));
+  area.position.z = -0.2;
+  const grid = new THREE.GridHelper(W, Math.round(W / 10), 0x8a8f98, 0x50545b);
+  grid.rotation.x = Math.PI / 2; grid.scale.set(1, 1, D / W); grid.position.z = -0.05;
+  // build volume outline
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W, D, H)),
+    new THREE.LineDashedMaterial({ color: 0x8a8f98, dashSize: 4, gapSize: 3 }));
+  edges.computeLineDistances(); edges.position.z = H / 2;
+  bed.add(plateMesh, area, grid, edges);
+  bed.userData = { W, D, H };
+
+  const used = report.plate_size || [0, 0, 0];
+  const pct = (100 * used[0] * used[1] / (W * D)).toFixed(1);
+  document.getElementById('bedinfo').innerHTML =
+    `<b>${pr.name}</b><br>Build volume ${W} × ${D} × ${H} mm<br>` +
+    `Parts use ${used.map(v => +v.toFixed(1)).join(' × ')} mm (${pct}% of the bed)<br>` +
+    `<span class="sub">Grid: 10 mm</span>`;
+}
+
+function updateVisibility() {
+  for (const m of meshes) {
+    const printable = m.kind !== 'vitamin';
+    m.group.visible = m.checkbox.checked && (view === 'assembly' || printable);
+  }
+}
+
+function frame(target, size, dir) {
+  controls.target.copy(target);
+  camera.position.copy(target).add(dir.clone().normalize().multiplyScalar(size * 1.6));
+  camera.near = size / 300; camera.far = size * 50; camera.updateProjectionMatrix();
+}
+
+function setView(v) {
+  view = v;
+  for (const b of document.getElementById('view').children) b.classList.toggle('on', b.dataset.view === v);
+  history.replaceState(null, '', v === 'bed' ? '#bed' : location.pathname + location.search);
+  overlay.clear(); showReadout(''); picks = [];
+  document.querySelectorAll('.meas.active').forEach(x => x.classList.remove('active'));
+  for (const m of meshes) {
+    m.group.matrixAutoUpdate = false;
+    m.group.matrix.copy(v === 'bed' && m.plate ? new THREE.Matrix4().set(...m.plate) : identity);
+    m.group.matrixWorldNeedsUpdate = true;
+    m.row.classList.toggle('disabled', v === 'bed' && m.kind === 'vitamin');
+    m.checkbox.disabled = v === 'bed' && m.kind === 'vitamin';
+    m.row.querySelector('.tag').textContent = m.tags[v];
+  }
+  updateVisibility();
+  bed.visible = v === 'bed';
+  document.getElementById('bedinfo').hidden = v !== 'bed' || !bed.userData.W;
+  scene.updateMatrixWorld(true);
+
+  box.makeEmpty(); for (const m of meshes) if (m.group.visible || v === 'assembly') box.expandByObject(m.group);
+  if (v === 'bed' && bed.userData.W) {
+    const { W, D, H } = bed.userData;
+    frame(new THREE.Vector3(0, -D * 0.04, H * 0.3), Math.hypot(W, D, H) * 1.05, new THREE.Vector3(0.6, -1.3, 1.0));
+  } else {
+    frame(box.getCenter(new THREE.Vector3()), box.getSize(new THREE.Vector3()).length() * 0.9, new THREE.Vector3(0.9, -1.3, 1.0));
+  }
+  updatePlane();
+}
+document.getElementById('view').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (b) setView(b.dataset.view);
+});
 
 function renderTests(tests) {
   const el = document.getElementById('tests');
@@ -253,6 +340,7 @@ function renderTests(tests) {
       row.innerHTML = `<span class="l"></span><span class="v">${fmt(m.value, m.units)} <span class="lim">${lim}</span></span>`;
       row.querySelector('.l').textContent = m.label;
       if (m.points) row.addEventListener('click', () => {
+        if (view !== 'assembly') setView('assembly'); // measured points are in assembly coordinates
         document.querySelectorAll('.meas.active').forEach(x => x.classList.remove('active'));
         row.classList.add('active');
         drawSegment(...m.points);

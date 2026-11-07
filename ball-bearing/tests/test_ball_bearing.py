@@ -10,7 +10,6 @@ from scadcheck import Design, bounds, intersection_volume, is_watertight, min_di
 # Requirements not stated in constants.scad.
 CAGE_CLEARANCE = (0.2, 0.5)  # mm between cage and each race: must spin freely but not wobble
 BALL_PLAY_MAX = 0.15  # mm between a ball and its groove: more than this and the bearing rattles
-BED = (220, 220, 250)  # printer build volume, mm
 ALIGN_TOL = 0.01  # mm
 
 
@@ -25,6 +24,8 @@ def bearing() -> Design:
         },
         vitamins={"steel-balls": "vitamins/steel-balls.scad"},
     )
+    # Cage prints upside down so its solid top ring is on the bed (see parts/cage.scad).
+    design["cage"].print_rotation = (180, 0, 0)
     design["outer-race"].color = "#4f7cac"
     design["inner-race"].color = "#5fa38a"
     design["cage"].color = "#e0a040"
@@ -47,11 +48,28 @@ def test_watertight(bearing, name):
 
 
 @pytest.mark.parametrize("name", ["outer-race", "inner-race", "cage"])
-def test_fits_bed(bearing, measure, name):
-    """Printed parts fit the printer's build volume."""
-    dims = size(bearing[name])
-    measure(f"{name} max dimension", max(dims))
-    assert all(d <= b for d, b in zip(dims, BED))
+def test_fits_printer(bearing, measure, name):
+    """Each printed part, in print orientation, fits the printer's build volume."""
+    dims = bearing[name].print_mesh.extents
+    measure(f"{name} max dimension", max(dims), max=min(bearing.printer_spec.volume))
+    assert all(d <= v for d, v in zip(dims, bearing.printer_spec.volume))
+
+
+def test_plate_fits(bearing, measure):
+    """All printed parts fit on one plate together."""
+    plate = bearing.plate
+    measure("plate width used", plate.size[0], max=plate.printer.volume[0])
+    measure("plate depth used", plate.size[1], max=plate.printer.volume[1])
+    assert plate.fits
+
+
+@pytest.mark.parametrize("name", ["outer-race", "inner-race", "cage"])
+def test_rests_flat_on_bed(bearing, measure, name):
+    """In print orientation, each part has a real footprint on the bed (not a point or edge)."""
+    m = bearing[name].print_mesh
+    on_bed = m.area_faces[(m.face_normals[:, 2] < -0.999) & (m.triangles[:, :, 2].max(axis=1) < 1e-3)].sum()
+    measure(f"{name} bed contact area", on_bed, min=1.0, units="mm²")
+    assert on_bed >= 1.0
 
 
 @pytest.mark.parametrize("a,b", list(combinations(ALL_PARTS, 2)))

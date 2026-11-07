@@ -14,6 +14,8 @@ import manifold3d
 import numpy as np
 import trimesh
 
+from .printers import DEFAULT_PRINTER, PRINTERS, Printer
+
 # Every Design built this session, so the pytest plugin can describe its parts
 # in the report that the viewer reads.
 REGISTRY: dict[str, "Design"] = {}
@@ -33,10 +35,27 @@ class Part:
     stl: Path
     kind: str = "part"  # "part" (printed) or "vitamin" (off-the-shelf hardware)
     color: str | None = None
+    # How the part goes on the bed, as OpenSCAD rotate([x, y, z]) degrees from its
+    # assembly orientation. The bed layout then drops it onto z=0.
+    print_rotation: tuple[float, float, float] = (0, 0, 0)
 
     @cached_property
     def mesh(self) -> trimesh.Trimesh:
         return trimesh.load(self.stl, force="mesh")
+
+    @property
+    def print_matrix(self) -> np.ndarray:
+        """4x4 rotation into print orientation (same convention as OpenSCAD rotate())."""
+        rx, ry, rz = np.radians(self.print_rotation)
+        return trimesh.transformations.euler_matrix(rx, ry, rz, "sxyz")
+
+    @cached_property
+    def print_mesh(self) -> trimesh.Trimesh:
+        """The part in print orientation, resting on z=0."""
+        m = self.mesh.copy()
+        m.apply_transform(self.print_matrix)
+        m.apply_translation([0, 0, -m.bounds[0, 2]])
+        return m
 
     @cached_property
     def manifold(self) -> manifold3d.Manifold:
@@ -65,6 +84,8 @@ class Design:
     vitamins: dict[str, str] = field(default_factory=dict)
     defines: dict[str, float | str] = field(default_factory=dict)  # openscad -D overrides
     build_dir: Path | None = None
+    printer: str = DEFAULT_PRINTER  # key into scadcheck.printers.PRINTERS
+    plate_spacing: float = 5.0  # mm between parts in the bed layout
 
     def __post_init__(self):
         self.root = Path(self.root).resolve()
@@ -94,6 +115,14 @@ class Design:
     def printed(self) -> list[Part]:
         return [p for p in self if p.kind == "part"]
 
+    @property
+    def printer_spec(self) -> Printer:
+        return PRINTERS[self.printer]
+
+    @cached_property
+    def plate(self) -> "Plate":
+        return layout_plate(self.printed(), self.printer_spec, self.plate_spacing)
+
     def render(self, force: bool = False) -> "Design":
         """Render every part to STL; skip parts whose STL is newer than all .scad sources."""
         newest_src = max(p.stat().st_mtime for p in self.root.rglob("*.scad"))
@@ -112,6 +141,47 @@ class Design:
 
     def constants(self, filename: str = "constants.scad") -> dict[str, float]:
         return read_constants(self.root / filename)
+
+
+@dataclass
+class Plate:
+    """Printed parts arranged on one bed. The bed is centred on the origin, top at z=0."""
+
+    printer: Printer
+    transforms: dict[str, np.ndarray]  # part name -> 4x4, assembly coords -> bed coords
+    size: tuple[float, float, float]  # extent of the arrangement (x, y, z), mm
+
+    @property
+    def fits(self) -> bool:
+        return all(s <= v for s, v in zip(self.size, self.printer.volume))
+
+
+def layout_plate(parts: list[Part], printer: Printer, spacing: float) -> Plate:
+    """Shelf-pack parts in print orientation: rows left to right, tallest-in-Y first,
+    then centre the whole arrangement on the bed."""
+    width = printer.volume[0]
+    items = sorted(parts, key=lambda p: -p.print_mesh.extents[1])
+    x = y = row_depth = 0.0
+    spots = []
+    for p in items:
+        ex, ey, _ = p.print_mesh.extents
+        if x > 0 and x + ex > width:
+            x, y, row_depth = 0.0, y + row_depth + spacing, 0.0
+        spots.append((p, x, y))
+        x += ex + spacing
+        row_depth = max(row_depth, ey)
+
+    used_x = max((sx + p.print_mesh.extents[0] for p, sx, _ in spots), default=0.0)
+    used_y = max((sy + p.print_mesh.extents[1] for p, _, sy in spots), default=0.0)
+    used_z = max((p.print_mesh.extents[2] for p in parts), default=0.0)
+
+    transforms = {}
+    for p, sx, sy in spots:
+        lo =trimesh.transform_points(p.mesh.vertices, p.print_matrix).min(axis=0)
+        move = np.eye(4)
+        move[:3, 3] = [sx - used_x / 2 - lo[0], sy - used_y / 2 - lo[1], -lo[2]]
+        transforms[p.name] = move @ p.print_matrix
+    return Plate(printer, transforms, (float(used_x), float(used_y), float(used_z)))
 
 
 _ASSIGN = re.compile(r"^\s*([A-Za-z_]\w*)\s*=\s*([^;]+);", re.M)
