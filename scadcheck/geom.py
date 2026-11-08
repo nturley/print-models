@@ -57,7 +57,9 @@ def size(part: Part) -> np.ndarray:
 
 
 def is_watertight(part: Part) -> bool:
-    return bool(part.mesh.is_watertight and part.mesh.is_winding_consistent)
+    """The mesh exactly as exported is a closed, consistently wound solid."""
+    m = part.raw_mesh
+    return bool(m.is_watertight and m.is_winding_consistent)
 
 
 def overhang_area(part: Part, max_angle_deg: float = 45.0, floor_tol: float = 0.01) -> float:

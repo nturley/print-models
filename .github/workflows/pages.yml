@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  BLENDER_VERSION: 5.0.1
+
 concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: true
@@ -19,11 +22,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install OpenSCAD
+      - name: Install OpenSCAD and Blender's system libraries
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends openscad
+          sudo apt-get install -y --no-install-recommends openscad \
+            libxi6 libxxf86vm1 libxfixes3 libxrender1 libxkbcommon0 libsm6 libice6 libgl1 libegl1
           openscad --version
+
+      # The .blend files are saved by Blender 5.0, newer than Ubuntu's package, so use
+      # the official build (cached: ~370 MB).
+      - name: Cache Blender
+        id: blender-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+
+      - name: Download Blender
+        if: steps.blender-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/blender
+          curl -sSfL "https://download.blender.org/release/Blender${BLENDER_VERSION%.*}/blender-${BLENDER_VERSION}-linux-x64.tar.xz" \
+            | tar -xJ -C ~/blender --strip-components=1
+
+      - name: Use Blender
+        run: |
+          echo "BLENDER=$HOME/blender/blender" >> "$GITHUB_ENV"
+          ~/blender/blender --version | head -1
 
       - uses: astral-sh/setup-uv@v6
         with:

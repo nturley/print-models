@@ -71,6 +71,14 @@ def export_downloads(design: Design) -> list[dict]:
     write_3mf(plate_file, placed)
     downloads.append({"label": f"Plate for {plate.printer.name} (.3mf)", "file": plate_file.name})
 
+    if design.print_in_place:
+        # One STL of everything as assembled: separate files would lose the in-place fit.
+        whole = trimesh.util.concatenate([p.print_mesh.copy().apply_transform(plate.transforms[p.name])
+                                          for p in design.printed()])
+        whole_file = out / f"{design.name}.stl"
+        whole.export(whole_file)
+        downloads.append({"label": "Whole print, in place (.stl)", "file": whole_file.name})
+
     # Individual STLs in print orientation, centred, resting on z=0.
     (out / "print").mkdir(parents=True, exist_ok=True)
     stls = []
@@ -82,7 +90,8 @@ def export_downloads(design: Design) -> list[dict]:
     with zipfile.ZipFile(zip_file, "w", zipfile.ZIP_DEFLATED) as z:
         for f in stls:
             z.write(f, f"{design.name}/{f.name}")
-    downloads.append({"label": "All parts, print orientation (.zip of STLs)", "file": zip_file.name})
+    label = "Separate parts, for reference (.zip of STLs)" if design.print_in_place else "All parts, print orientation (.zip of STLs)"
+    downloads.append({"label": label, "file": zip_file.name})
 
     for d_ in downloads:
         d_["bytes"] = (out / d_["file"]).stat().st_size

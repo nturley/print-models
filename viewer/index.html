@@ -250,7 +250,8 @@ async function load() {
     row.innerHTML = `<label><input type="checkbox" checked><span class="swatch" style="background:${'#' + color.getHexString()}"></span><span class="pname"></span></label><span class="tag"></span><span class="plinks"></span>`;
     row.querySelector('.pname').textContent = p.name;
     const plinks = row.querySelector('.plinks');
-    if (report.repo && p.source) plinks.append(link(`${report.repo.url}/blob/${report.repo.ref}/${p.source}`, '.scad', `${p.source} on GitHub`));
+    if (report.repo && p.source) plinks.append(link(`${report.repo.url}/blob/${report.repo.ref}/${p.source}`,
+      p.source.slice(p.source.lastIndexOf('.')), `${p.source} on GitHub`));
     if (p.print_stl) plinks.append(link(base + p.print_stl, '.stl', `Download ${p.name}.stl (print orientation)`, `${p.name}.stl`));
     const dims = p.size ? p.size.map(v => +v.toFixed(1)).join(' × ') + ' mm' : '';
     meshes[idx].row = row;
