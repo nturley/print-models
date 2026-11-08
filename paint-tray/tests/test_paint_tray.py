@@ -10,11 +10,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from scadcheck import Design, intersection_volume, is_watertight, min_distance
-from scadcheck.design import blend
+from scadcheck import Design, blend, min_distance, standard_checks
 from scadcheck.geom import Distance
 
-PARTS = ["outer", "inner"]
 # Print-in-place gap: wide enough not to fuse when printed, narrow enough not to flop.
 HINGE_GAP = (0.3, 0.8)  # mm
 PULL = 1.0  # mm: an end panel moved this far in any direction must hit the middle panel
@@ -24,17 +22,22 @@ HINGE_Z = 5.0
 HINGE_Y = {"front": -100.0, "back": 0.0}
 FOLD = 180  # degrees each end panel must fold up over the middle panel
 
+TRAY = Design(
+    root=Path(__file__).parents[1],
+    parts={"outer": blend("paint-tray.blend", "Outer"), "inner": blend("paint-tray.blend", "Inner")},
+    print_in_place=True,
+)
+TRAY["outer"].color = "#4f7cac"
+TRAY["inner"].color = "#e0a040"
+
+# watertight (no internal walls from the Mirror modifier), plate, every panel on the
+# first layer, and the panels don't overlap
+globals().update(standard_checks(TRAY))
+
 
 @pytest.fixture(scope="module")
 def tray() -> Design:
-    design = Design(
-        root=Path(__file__).parents[1],
-        parts={"outer": blend("paint-tray.blend", "Outer"), "inner": blend("paint-tray.blend", "Inner")},
-        print_in_place=True,
-    )
-    design["outer"].color = "#4f7cac"
-    design["inner"].color = "#e0a040"
-    return design.render()
+    return TRAY.ready()
 
 
 @pytest.fixture(scope="module")
@@ -44,48 +47,7 @@ def end_panels(tray) -> dict:
     return dict(zip(["front", "back"], bodies))
 
 
-# ---------- every part ----------
-
-@pytest.mark.parametrize("name", PARTS)
-def test_watertight(tray, measure, name):
-    """The exported mesh is a closed solid, with no zero-thickness walls inside it.
-
-    Blender's Mirror modifier leaves a wall on the mirror plane when the mirrored half
-    is closed there. Slicers usually cope, but it isn't a valid solid. The other checks
-    run on a copy with those walls removed.
-    """
-    walls = measure(f"{name} internal wall faces", tray[name].interior_faces_removed, max=0, units="faces")
-    assert is_watertight(tray[name]), f"{walls:.0f} faces form zero-thickness walls inside the mesh (Mirror modifier seam)"
-
-
-# ---------- printing ----------
-
-def test_plate_fits(tray, measure):
-    """The whole tray, printed flat in one piece, fits the printer."""
-    plate = tray.plate
-    measure("plate width used", plate.size[0], max=plate.printer.volume[0])
-    measure("plate depth used", plate.size[1], max=plate.printer.volume[1])
-    measure("height", plate.size[2], max=plate.printer.volume[2])
-    assert plate.fits
-
-
-@pytest.mark.parametrize("name", PARTS)
-def test_rests_flat_on_bed(tray, measure, name):
-    """Every panel sits on the bed (print-in-place: all start on the same layer)."""
-    m = tray[name].mesh
-    floor = min(tray[p].mesh.bounds[0, 2] for p in PARTS)
-    on_bed = m.area_faces[(m.face_normals[:, 2] < -0.999) & (m.triangles[:, :, 2].max(axis=1) < floor + 1e-3)].sum()
-    measure(f"{name} bed contact area", on_bed, min=1.0, units="mm²")
-    assert on_bed >= 1.0
-
-
 # ---------- hinges ----------
-
-def test_no_interference(tray, measure):
-    """The panels don't overlap anywhere."""
-    vol = measure("outer ∩ inner", intersection_volume(tray["outer"], tray["inner"]), max=0.001, units="mm³")
-    assert vol <= 0.001
-
 
 def test_hinge_gap(tray, measure):
     """Hinge parts are far enough apart not to fuse when printed in place, close enough not to flop."""

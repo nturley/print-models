@@ -8,6 +8,7 @@ its parts and every test's outcome and measurements.
 from __future__ import annotations
 
 import json
+import re
 import time
 from pathlib import Path
 
@@ -47,13 +48,24 @@ def measure(request):
     return record
 
 
+def _short_message(report) -> str | None:
+    """One readable line for the viewer: the assertion's own message if it has one,
+    otherwise pytest's summary with numpy wrappers like np.float64(1.5) unwrapped."""
+    crash = getattr(report.longrepr, "reprcrash", None)
+    if crash is None:
+        return None
+    text = re.sub(r"np\.(?:float|int)\d*\(([^()]*)\)", r"\1", str(crash.message))
+    first = text.splitlines()[0] if text else ""
+    return first.removeprefix("AssertionError: ")
+
+
 def pytest_runtest_logreport(report):
     if report.when == "call" or (report.when == "setup" and report.outcome != "passed"):
         info = _tests.setdefault(report.nodeid, {})
         info.update(
             nodeid=report.nodeid,
             outcome=report.outcome,
-            message=str(report.longrepr.reprcrash.message) if report.failed and hasattr(report.longrepr, "reprcrash") else None,
+            message=_short_message(report) if report.failed else None,
         )
 
 

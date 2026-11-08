@@ -1,82 +1,42 @@
 """Design rules for the ball bearing (see ../README.md, "Parameters")."""
 
-from itertools import combinations
 from pathlib import Path
 
 import pytest
 
-from scadcheck import Design, bounds, intersection_volume, is_watertight, min_distance, size
+from scadcheck import Design, bounds, min_distance, standard_checks
 
 # Requirements not stated in constants.scad.
 CAGE_CLEARANCE = (0.2, 0.5)  # mm between cage and each race: must spin freely but not wobble
 BALL_PLAY_MAX = 0.15  # mm between a ball and its groove: more than this and the bearing rattles
 ALIGN_TOL = 0.01  # mm
 
+BEARING = Design(
+    root=Path(__file__).parents[1],
+    parts={
+        "outer-race": "parts/outer-race.scad",
+        "inner-race": "parts/inner-race.scad",
+        "cage": "parts/cage.scad",
+    },
+    vitamins={"steel-balls": "vitamins/steel-balls.scad"},
+)
+# Cage prints upside down so its solid top ring is on the bed (see parts/cage.scad).
+BEARING["cage"].print_rotation = (180, 0, 0)
+for _name, _color in {"outer-race": "#4f7cac", "inner-race": "#5fa38a", "cage": "#e0a040", "steel-balls": "#c0c4cc"}.items():
+    BEARING[_name].color = _color
+
+# watertight, fits printer, plate, rests flat, no interference (balls included)
+globals().update(standard_checks(BEARING))
+
 
 @pytest.fixture(scope="module")
 def bearing() -> Design:
-    design = Design(
-        root=Path(__file__).parents[1],
-        parts={
-            "outer-race": "parts/outer-race.scad",
-            "inner-race": "parts/inner-race.scad",
-            "cage": "parts/cage.scad",
-        },
-        vitamins={"steel-balls": "vitamins/steel-balls.scad"},
-    )
-    # Cage prints upside down so its solid top ring is on the bed (see parts/cage.scad).
-    design["cage"].print_rotation = (180, 0, 0)
-    design["outer-race"].color = "#4f7cac"
-    design["inner-race"].color = "#5fa38a"
-    design["cage"].color = "#e0a040"
-    design["steel-balls"].color = "#c0c4cc"
-    return design.render()
+    return BEARING.ready()
 
 
 @pytest.fixture(scope="module")
 def c(bearing):
     return bearing.constants()
-
-
-ALL_PARTS = ["outer-race", "inner-race", "cage", "steel-balls"]
-
-
-@pytest.mark.parametrize("name", ALL_PARTS)
-def test_watertight(bearing, name):
-    """Every mesh is a closed, consistently wound solid."""
-    assert is_watertight(bearing[name])
-
-
-@pytest.mark.parametrize("name", ["outer-race", "inner-race", "cage"])
-def test_fits_printer(bearing, measure, name):
-    """Each printed part, in print orientation, fits the printer's build volume."""
-    dims = bearing[name].print_mesh.extents
-    measure(f"{name} max dimension", max(dims), max=min(bearing.printer_spec.volume))
-    assert all(d <= v for d, v in zip(dims, bearing.printer_spec.volume))
-
-
-def test_plate_fits(bearing, measure):
-    """All printed parts fit on one plate together."""
-    plate = bearing.plate
-    measure("plate width used", plate.size[0], max=plate.printer.volume[0])
-    measure("plate depth used", plate.size[1], max=plate.printer.volume[1])
-    assert plate.fits
-
-
-@pytest.mark.parametrize("name", ["outer-race", "inner-race", "cage"])
-def test_rests_flat_on_bed(bearing, measure, name):
-    """In print orientation, each part has a real footprint on the bed (not a point or edge)."""
-    m = bearing[name].print_mesh
-    on_bed = m.area_faces[(m.face_normals[:, 2] < -0.999) & (m.triangles[:, :, 2].max(axis=1) < 1e-3)].sum()
-    measure(f"{name} bed contact area", on_bed, min=1.0, units="mm²")
-    assert on_bed >= 1.0
-
-
-@pytest.mark.parametrize("a,b", list(combinations(ALL_PARTS, 2)))
-def test_no_interference(bearing, measure, a, b):
-    """No two parts (balls included) occupy the same space."""
-    vol = measure(f"{a} ∩ {b}", intersection_volume(bearing[a], bearing[b]), max=0.001, units="mm³")
-    assert vol <= 0.001
 
 
 @pytest.mark.parametrize("race", ["outer-race", "inner-race"])

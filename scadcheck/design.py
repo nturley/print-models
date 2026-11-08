@@ -254,6 +254,7 @@ class Design:
                     print_source=self.root / spec["print"] if spec.get("print") else None,
                     print_raw=self.build_dir / "raw" / f"{name}.stl" if spec.get("print") else None,
                 )
+        self._rendered = False
         REGISTRY[self.root.name] = self
 
     @property
@@ -278,6 +279,12 @@ class Design:
         if self.print_in_place:
             return layout_in_place(self.printed(), self.printer_spec)
         return layout_plate(self.printed(), self.printer_spec, self.plate_spacing)
+
+    def ready(self) -> "Design":
+        """Render once (on first use) and return self; later calls are free."""
+        if not self._rendered:
+            self.render()
+        return self
 
     def render(self, force: bool = False) -> "Design":
         """Render every part to STL, in parallel; skip outputs newer than their sources.
@@ -309,6 +316,7 @@ class Design:
             futures += [pool.submit(_blender, src, parts) for src, parts in blend_jobs.items()]
             for future in futures:
                 future.result()
+        self._rendered = True
         return self
 
     def constants(self, filename: str = "constants.scad") -> dict[str, float]:
