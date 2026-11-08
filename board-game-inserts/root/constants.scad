@@ -53,8 +53,7 @@ pin_chamfer = 0.6;       // lead-in on the pin tip
 pin_fit = 0.15;          // hole diameter over pin diameter (FDM holes print a little small)
 pin_hole_extra = 0.4;    // hole deeper than the pin, so the faces seat flush
 pin_hole_chamfer = 0.4;  // at the hole mouth (bed side): room for elephant's foot
-pin_inset = 10;          // token-column pin centres from the inside of the front/back walls
-corner_pin_inset = 6;    // third pin: front-left corner, this far from the inside of both walls
+pin_inset = 6;           // four pins, one per corner, this far from the inside of both walls
 boss_wall = 1.6;         // around each hole, inside the top piece's token-column hollows
 pinch_notch_w = 30;      // U-notch in the floor at the card slot opening
 pinch_notch_l = 14;
@@ -72,6 +71,29 @@ bin_w = card_slot_w;                         // warrior bin sits on the shelf, s
 column_x = wall + bin_w + divider_t;         // token column starts here
 column_w = faction_box_w - column_x - wall;  // 21.6
 column_l = faction_box_d - 2 * wall;         // 103.3
+
+// ---- Shared tray (one piece filling the right-hand column: deck at the back, tokens at the front) ----
+shared_w = insert_w - 2 * faction_box_w;   // 94
+shared_tray_d = insert_d;                  // 213, the whole tray
+shared_d = insert_d / 2;                   // 106.5, each half (deck section, token section)
+shared_x = 2 * faction_box_w;              // 182
+deck_h = 19;             // 54-card shared deck (measured)
+deck_scoop_d = 20;       // finger scoops halfway along the deck's long sides
+suit_w = 14.7;           // winter suit markers (oblong), stored long side front to back
+suit_l = 28.7;
+die_flat = 21.7;         // custom d12: height lying on a face
+die_corner = 25.5;       // widest point
+shared_clr = 0.75;       // around each stack or die in the shared tray (each side)
+thumb_scoop_d = 10;      // on the front edge of each token pocket in the shared tray
+die_scoop_d = 14;        // at each end of the dice slot
+bay_max_w = 22;          // hollow bays under raised floors: widest one whose 45° roof fits
+
+// Shared tray rows, back to front: [kind, stack count] per pocket
+shared_rows = [
+    [["suit", 4], ["suit", 4], ["suit", 4]],            // rabbit, fox, mouse
+    [["dice", 2]],                                    // both dice in one long slot
+    [["square", 12], ["square", 11], ["square", 4], ["square", 4]],   // items, items, ruins, score
+];
 
 // ---- Per-faction data ----
 factions = ["marquise", "eyrie", "alliance", "vagabond"];
@@ -93,7 +115,7 @@ function faction_tokens(f) =
     : f == "alliance" ? [["round", 10], ["square", 3]]                                           // sympathy, bases
     : [["square", 3]];                                                                           // relationship markers
 
-// Where each box sits in the insert (2 x 2 block on the left; shared trays on the right)
+// Where each box sits in the insert (2 x 2 block on the left; the shared tray on the right)
 function faction_pos(f) =
     f == "marquise" ? [0, insert_d - faction_box_d, 0]
     : f == "eyrie" ? [faction_box_w, insert_d - faction_box_d, 0]

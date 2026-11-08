@@ -139,20 +139,18 @@ parameters that differ per faction (card slot height, pockets). **Two pieces
 glued together**, both open cups that print upright with no supports:
 
 - **Base** (`parts/faction-base.scad`): the **side-loading card slot**, 65 × 90
-  inside, open through the back wall so cards slide in and out sideways.
+  inside, **centred side to side**, open through the back wall so cards slide in and out sideways.
   Height = floor + card stack + 1.5 mm headroom (Marquise/Alliance 3.4, Eyrie 6.5,
   Vagabond 10.9; 0.8 mm headroom looked too tight). Pinch notch in the floor at the opening, push hole under the
   closed end. **Solid apart from the slot**, so its whole top is a flat face
   against the top piece (the slicer's infill keeps the filament cost low). In
   the insert, the opening faces the box wall or a neighbouring tray, so cards
   can't slide out.
-- **Joint:** three **5 mm pins, 4 mm tall**, stand on the base and go into
-  matching holes in the top's underside:
-  - two in the token column strip, 10 mm from the front and back walls; their
-    holes go up into small posts inside the token-pocket hollows;
-  - one in the front-left corner (on the solid strip in front of the card
-    slot), so the bin side is held too; its hole goes up into a small corner
-    block in the warrior bin, blended into the walls.
+- **Joint:** four **5 mm pins, 4 mm tall**, one in each corner (6 mm from both
+  walls), stand on the solid strips beside and in front of the centred card
+  slot and go into matching holes in the top's underside. The two on the
+  warrior-bin side go into the bin's raised solid floor; the two on the token
+  side go up into small posts inside the token-pocket hollows.
 
   The holes are 0.15 mm larger than the pins (`pin_fit`). On the first
   Marquise print (two pins) this came out as a **good press fit, no glue
@@ -160,8 +158,10 @@ glued together**, both open cups that print upright with no supports:
 - **Top** (`parts/faction-top.scad`): its 1.2 mm floor is the slot's ceiling,
   and since that's the side printed against the bed, the cards slide on a
   smooth face and **nothing bridges** (not over the cards, not over the slot
-  mouth). The **warrior bin** (65 wide, full inside depth) sits on that floor,
-  so cards come out without disturbing the warriors. Piles: Marquise ≈ 22 mm,
+  mouth). The **warrior bin** (65 wide, full inside depth) has a **flat floor
+  raised to the top of the pin holes** (~5.6 mm above the joint, solid
+  underneath), so nothing pokes up into it; cards come out without disturbing
+  the warriors. Piles: Marquise ≈ 22 mm,
   Eyrie ≈ 17.5, Alliance ≈ 8.5.
 - No bridges: the hollows have 45° peaked roofs (`tent_hollow()` in
   `board-game-inserts/lib/print.scad`); the only flat overhangs left are the
@@ -211,13 +211,27 @@ Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
 - Can 2 cards be pinched out of the 2.2 mm Marquise/Alliance slots?
 - Are the finger notches big enough to tip tokens out of their pockets?
 
-**Shared tray** (94 × 106.5, 90.8 × 103.3 inside): three rows, each stack
-evenly spaced across the width and the rows evenly spaced front to back:
+**Shared tray** (`parts/shared-tray.scad`): one piece filling the right-hand
+column, 94 × 213 × 46 (fits the K2 bed).
 
-- Back row: 3 suit marker stacks (rabbit, fox, mouse), long side running
-  front to back (≈ 13 mm gaps; lying sideways would leave only ≈ 1 mm).
-- Middle row: 2 dice.
-- Front row: 4 square stacks: items ×2 (12 + 11), ruins, score markers.
+- **Back half:** the 54-card deck in a 65 × 90 pocket centred in that half,
+  floor raised so the deck ends 1 mm below the rim, with a 20 mm finger scoop
+  halfway along each long side.
+- **Front half**, three rows, each spread evenly across the width, with the rows
+  spread evenly front to back:
+  - Back row: 3 suit marker stacks (rabbit, fox, mouse) in rounded oblong
+    pockets, long side running front to back (lying sideways would leave only
+    ≈ 1 mm between them).
+  - Middle row: **both dice in one long slot** across the tray, side by side,
+    with a 14 mm scoop at each end.
+  - Front row: 4 square stacks: items ×2 (12 + 11), ruins, score markers.
+  - 0.75 mm clearance around every stack; floors raised so everything ends
+    1 mm below the rim; a 10 mm thumb scoop on the front edge of each token
+    pocket (down to 2 mm above the floor, keeping the bottom token).
+- 4 mm rounded corners; hollow underneath in peaked-roof bays (`tent_bays()`,
+  one set per half at that half's height), so it prints upright with no
+  supports and no bridges (tested). Layout in `lib/shared-layout.scad`; rows
+  in `shared_rows` in `constants.scad`.
 
 Minimum widths at 106.5 deep (4-warrior piles, 55% looseness): Marquise 91,
 the other factions and the shared deck 69, combined shared tray 65 (or 36 as

@@ -1,11 +1,11 @@
 // Faction box, top piece: warrior bin + token column, an open cup that sits on the base
 // (faction-base.scad), located by two pins pressed into holes in its underside (glue optional).
 // Its floor is the card slot's ceiling. Prints upright (floor on the bed).
-//   - Warrior bin: 65 wide, full inside depth.
+//   - Warrior bin: 65 wide, full inside depth, flat floor raised above the pin holes.
 //   - Token column on the right: one pocket per stack, floor raised so the stack ends just below
 //     the rim (hollow underneath, with a 45° peaked roof so nothing bridges), and a finger notch
 //     in the outer wall beside it.
-//   - Pin holes go up into small posts inside the pocket hollows.
+//   - Four pin holes, one per corner: bin side into the bin's solid floor, token side into posts.
 //   - No lid: in the box, the board stack caps every tray.
 //   - Rounded corners (anti-warp).
 // Render one with:  openscad -D 'faction="eyrie"' -o eyrie-top.stl faction-top.scad
@@ -30,8 +30,8 @@ module faction_top_shell(f) {
     difference() {
         translate([0, 0, z0]) rbox([w, d, h - z0], corner_r);
 
-        // warrior bin, full inside depth
-        translate([wall, wall, fz0]) rbox([bin_w, d - 2 * wall, h], ri);
+        // warrior bin, full inside depth, flat floor raised above the pin holes
+        translate([wall, wall, bin_floor_z(f)]) rbox([bin_w, d - 2 * wall, h], ri);
 
         for (i = [0 : len(pockets) - 1]) {
             p = pockets[i];
@@ -62,12 +62,10 @@ module faction_top(f) {
     difference() {
         union() {
             faction_top_shell(f);
-            // posts for the pin holes: in the token-pocket hollows, and a corner block in the
-            // warrior bin (blended into the corner so nothing can wedge behind it)
-            for (p = pin_positions()) translate([0, 0, top_floor_z(f) - eps]) hull() {
-                translate([p[0], p[1], 0]) cylinder(d = boss_d(), h = boss_top(f) - top_floor_z(f) + eps, $fn = 48);
-                if (!in_column(p)) translate([wall - eps, wall - eps, 0]) cube([1, 1, boss_top(f) - top_floor_z(f) + eps]);
-            }
+            // posts for the token-side pin holes, standing in the pocket hollows
+            // (the bin-side holes go into the bin's raised solid floor)
+            for (p = pin_positions()) if (in_column(p)) translate([p[0], p[1], top_floor_z(f) - eps])
+                cylinder(d = boss_d(), h = boss_top(f) - top_floor_z(f) + eps, $fn = 48);
         }
         // pin holes from the underside, with a chamfered mouth
         for (p = pin_positions()) translate([p[0], p[1], z0]) {

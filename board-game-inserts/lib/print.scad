@@ -14,11 +14,28 @@ module rbox(size, r, fn = 32) {
 module tent_hollow(size, h, r = 0) {
     w = size[0];
     l = size[1];
-    ridge_w = max(0.01, w - 2 * h);
-    hull() {
-        rbox([w, l, max(0.01, h - w / 2)], r);
-        translate([(w - ridge_w) / 2, 0, h - 0.01]) cube([ridge_w, l, 0.01]);
+    eave = h - w / 2;   // height where the roof starts
+    profile = eave >= 0
+        ? [[0, 0], [w, 0], [w, eave], [w / 2, h], [0, eave]]   // house shape, sharp ridge
+        : [[0, 0], [w, 0], [w - h, h], [h, h]];                // too low for a full roof: flat-topped
+    intersection() {
+        rbox([w, l, h], r);   // keeps the rounded corners
+        translate([0, l, 0]) rotate([90, 0, 0]) linear_extrude(l) polygon(profile);
     }
+}
+
+// A row of tent_hollow() bays side by side across x, separated by ribs, filling [w, l] up to
+// height h. Bays are at most max_w wide, so each roof fits in the height (needs bay width / 2).
+module tent_bays(size, h, max_w = 22, rib = 1.2, r = 0) {
+    w = size[0];
+    n = max(1, ceil((w + rib) / (max_w + rib)));
+    bw = (w - (n - 1) * rib) / n;
+    for (i = [0 : n - 1]) translate([i * (bw + rib), 0, 0]) tent_hollow([bw, size[1]], h, r);
+}
+
+// Rounded oblong (stadium), centred on the origin: w across x, l along y.
+module stadium(w, l) {
+    hull() for (s = [-1, 1]) translate([0, s * (l - w) / 2]) circle(d = w, $fn = 48);
 }
 
 // Anti-warp texture for a large flat bottom: a grid of small V-grooves (square bars turned 45°

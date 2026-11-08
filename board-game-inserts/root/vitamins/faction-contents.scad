@@ -8,7 +8,7 @@ show = "all";   // "cards", "tokens" or "all"
 
 module faction_contents(f, show = "all") {
     // card stack in the slot
-    if (show != "tokens") translate([wall + card_clr, faction_box_d - wall - card_slot_l + card_clr, floor_t])
+    if (show != "tokens") translate([slot_x0() + card_clr, slot_y0() + card_clr, floor_t])
         cube([card_w, card_l, faction_cards_h(f)]);
     // token stacks, centred in their pockets, on the raised floors
     toks = faction_tokens(f);

@@ -15,14 +15,15 @@ module faction_base(f) {
     w = faction_box_w;
     d = faction_box_d;
     h = base_h(f);
-    slot_y = d - wall - card_slot_l;
-    cx = wall + card_slot_w / 2;
+    slot_y = slot_y0();
+    sx = slot_x0();
+    cx = sx + card_slot_w / 2;
 
     difference() {
         rbox([w, d, h], corner_r);
 
         // card slot, open through the back wall
-        translate([wall, slot_y, floor_t]) rbox([card_slot_w, card_slot_l + wall + 1, h], corner_r - wall);
+        translate([sx, slot_y, floor_t]) rbox([card_slot_w, card_slot_l + wall + 1, h], corner_r - wall);
 
         // pinch notch through the floor at the slot opening
         translate([0, 0, -1]) hull() {
@@ -35,8 +36,8 @@ module faction_base(f) {
 
     }
 
-    // alignment pins, chamfered at the tip (two under the token column, one in the front-left corner)
-    assert(corner_pin_fits(), "corner pin doesn't fit in front of the card slot");
+    // alignment pins, one per corner, chamfered at the tip
+    assert(pins_clear_slot(), "a pin doesn't clear the card slot");
     for (p = pin_positions()) translate([p[0], p[1], h - eps]) {
         cylinder(d = pin_d, h = pin_h - pin_chamfer + eps, $fn = 48);
         translate([0, 0, pin_h - pin_chamfer + eps]) cylinder(d1 = pin_d, d2 = pin_d - 2 * pin_chamfer, h = pin_chamfer, $fn = 48);
