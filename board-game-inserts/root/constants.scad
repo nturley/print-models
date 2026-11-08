@@ -39,8 +39,9 @@ slot_headroom = 1.5;     // above the card stack in the side-loading slot (0.8 w
 token_pocket_clr_max = 3;   // pockets get the column's spare length, up to this much extra
 token_headroom = 1;      // token stacks stop this far below the rim (the board stack caps the trays)
 pocket_floor_t = 1.2;    // raised pocket floor; hollow underneath
-finger_notch_w = 14;     // notch in the outer wall beside each token pocket
-finger_notch_keep = 2;   // wall left above the pocket floor (holds the bottom token)
+finger_notch_w = 14;     // notch in the outer wall beside each token pocket (narrower than any token)
+finger_notch_keep = 0;   // notches and scoops reach the pocket floor: a fingernail fits under the bottom token
+notch_corner_r = 3;      // rounded bottom corners of the flat-bottomed finger notch
 card_push_hole_d = 16;   // under the closed end of the card slot: push the cards out
 
 // ---- Anti-warp ----

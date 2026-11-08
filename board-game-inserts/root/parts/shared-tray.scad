@@ -6,7 +6,7 @@
 //     middle: both dice in one long slot, with a scoop at each end
 //     front:  4 square stacks: items x2, ruins, score markers
 //   Pocket floors are raised so everything ends just below the rim; token pockets have a thumb
-//   scoop on their front edge. Hollow underneath in peaked-roof bays (no bridging), one set per
+//   scoop on their front edge, down to the pocket floor. Hollow underneath in peaked-roof bays (no bridging), one set per
 //   half. No lid: the board stack caps it. Prints upright, no supports.
 include <../constants.scad>
 use <../lib/shared-layout.scad>

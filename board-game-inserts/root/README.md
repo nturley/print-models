@@ -172,7 +172,9 @@ glued together**, both open cups that print upright with no supports:
   divider. One pocket per stack, with its **floor raised so the stack ends
   1 mm below the rim** (hollow underneath, closed by a 45° peaked roof
   so nothing bridges), and a **14 mm finger notch in the
-  outer wall** beside each pocket, down to 2 mm above the pocket floor. In the
+  outer wall** beside each pocket, **flat-bottomed at the pocket floor** so a
+  fingernail fits under the bottom token (narrower than any token, so none
+  can slip out). Pockets for round tokens (wood, keep, sympathy) are round. In the
   insert, that wall presses against the next tray or the box wall, so nothing
   escapes through the notch. Eyrie and Vagabond have leftover column space at
   the front: it's closed over flush with the rim (hollow underneath, peaked
@@ -227,7 +229,8 @@ column, 94 × 213 × 46 (fits the K2 bed).
   - Front row: 4 square stacks: items ×2 (12 + 11), ruins, score markers.
   - 0.75 mm clearance around every stack; floors raised so everything ends
     1 mm below the rim; a 10 mm thumb scoop on the front edge of each token
-    pocket (down to 2 mm above the floor, keeping the bottom token).
+    pocket, down to the pocket floor (a fingernail fits under the bottom
+    token).
 - 4 mm rounded corners; hollow underneath in peaked-roof bays (`tent_bays()`,
   one set per half at that half's height), so it prints upright with no
   supports and no bridges (tested). Layout in `lib/shared-layout.scad`; rows
