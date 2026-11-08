@@ -35,7 +35,7 @@ wall = 1.6;
 floor_t = 1.2;
 divider_t = 1.2;
 card_clr = 1;            // around the cards, each side
-slot_headroom = 0.8;     // above the card stack in the side-loading slot
+slot_headroom = 1.5;     // above the card stack in the side-loading slot (0.8 was too tight to slide cards in)
 token_pocket_clr_max = 3;   // pockets get the column's spare length, up to this much extra
 token_headroom = 1;      // token stacks stop this far below the rim (the board stack caps the trays)
 pocket_floor_t = 1.2;    // raised pocket floor; hollow underneath
@@ -45,8 +45,6 @@ card_push_hole_d = 16;   // under the closed end of the card slot: push the card
 
 // ---- Anti-warp ----
 corner_r = 4;            // outer vertical corners of the base and top (inner corners: corner_r - wall)
-relief_pitch = 10;       // bottom texture: V-groove grid spacing
-relief_bar = 0.4;        // groove bar size (depth = bar / sqrt(2) ~ 0.28)
 
 // ---- Base-to-top joint: two pins on the base, two holes in the top (press fit, tune by test print) ----
 pin_d = 5;

@@ -8,9 +8,12 @@ module rbox(size, r, fn = 32) {
 }
 
 // Anti-warp texture for a large flat bottom: a grid of small V-grooves (square bars turned 45°
-// about their length, so each cuts a diamond-shaped track) at z = 0. The first layer is broken
-// into islands that can shrink without pulling the corners up. Subtract it from the part.
+// about their length, so each cuts a diamond-shaped track) at z = 0. Subtract it from the part.
 //   size: [w, d] area to cover; pitch: groove spacing; bar: bar side (groove depth = bar / sqrt(2)).
+// CAUTION: not used any more. With bar = 0.4 the grooves (~0.28 deep) are deeper than a 0.2 mm
+// first layer, so the slicer splits the first layer into separate islands that don't stick
+// (the Root faction base failed this way on the K2's textured PEI). Keep grooves shallower than
+// the first layer (bar < ~0.25) if you try it again.
 module warp_relief(size, pitch = 10, bar = 0.4) {
     for (x = [pitch / 2 : pitch : size[0]])
         translate([x, size[1] / 2, 0]) rotate([0, 45, 0]) cube([bar, size[1] + 2, bar], center = true);

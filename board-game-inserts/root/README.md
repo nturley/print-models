@@ -140,8 +140,8 @@ glued together**, both open cups that print upright with no supports:
 
 - **Base** (`parts/faction-base.scad`): the **side-loading card slot**, 65 × 90
   inside, open through the back wall so cards slide in and out sideways.
-  Height = floor + card stack + 0.8 mm (Marquise/Alliance 2.7, Eyrie 5.8,
-  Vagabond 10.2). Pinch notch in the floor at the opening, push hole under the
+  Height = floor + card stack + 1.5 mm headroom (Marquise/Alliance 3.4, Eyrie 6.5,
+  Vagabond 10.9; 0.8 mm headroom looked too tight). Pinch notch in the floor at the opening, push hole under the
   closed end. **Solid apart from the slot**, so its whole top is a flat face
   against the top piece (the slicer's infill keeps the filament cost low). In
   the insert, the opening faces the box wall or a neighbouring tray, so cards
@@ -177,20 +177,27 @@ Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
 ### Printing
 
 - Both pieces print upright, no supports.
-- **Warping:** the first Marquise base (a thin 91 × 106.5 slab) lifted at the
-  corners and failed. Since then, both pieces have **4 mm rounded corners** and
-  an **anti-warp texture**: a 10 mm grid of 0.3 mm V-grooves in the bottom face
-  (`warp_relief()` in `board-game-inserts/lib/print.scad`, same trick as the
-  motor car frame), kept off the card slot ceiling on the top piece. Also
-  clean the plate (soap and water / IPA), check the bed temperature, and use a
-  5–8 mm brim if corners still lift.
+- **Warping:** the Marquise base is a thin 91 × 106.5 slab.
+  - Print 1 (square corners, flat bottom) finished but **lifted at the
+    corners**. Both pieces now have **4 mm rounded corners**.
+  - Print 2 added an anti-warp texture (a 10 mm grid of V-grooves in the
+    bottom face, `warp_relief()`) and **failed on the first layer**. The
+    grooves were ~0.28 mm deep, deeper than the 0.2 mm first layer, so the
+    slicer split the first layer into hundreds of separate 10 mm islands that
+    gripped poorly and got knocked loose (K2, textured PEI, matte PLA). **No
+    bottom texture now.**
+  - Settings: **regular (outer) brim, 5 mm**, not brim ears (ears only go on
+    sharp corners, and the corners are rounded). **Bed 60 °C** for PLA. Clean
+    the plate with dish soap and water first. Optionally 210 °C nozzle for
+    matte PLA.
+  - If it still lifts: raise the minimum base height (~4 mm) to stiffen it.
 
 ### First test print: things to check
 
 - Pin fit: too tight, too loose, or a good press fit? Tune `pin_fit`
   (0.15 now; try 0.1 tighter / 0.25 looser). A quick way to test: print just
   one base and top for the Marquise (the thinnest base).
-- Can 2 cards be pinched out of the 1.5 mm Marquise/Alliance slots?
+- Can 2 cards be pinched out of the 2.2 mm Marquise/Alliance slots?
 - Are the finger notches big enough to tip tokens out of their pockets?
 
 **Shared tray** (94 × 106.5, 90.8 × 103.3 inside): three rows, each stack

@@ -6,7 +6,7 @@
 //     the rim (hollow underneath), and a finger notch in the outer wall beside it.
 //   - Pin holes go up into small posts inside the pocket hollows.
 //   - No lid: in the box, the board stack caps every tray.
-//   - Rounded corners and a grooved underside (anti-warp texture), except over the card slot.
+//   - Rounded corners (anti-warp).
 // Render one with:  openscad -D 'faction="eyrie"' -o eyrie-top.stl faction-top.scad
 include <../constants.scad>
 use <../lib/faction-layout.scad>
@@ -51,12 +51,6 @@ module faction_top_shell(f) {
 
         // spare compartment at the front of the column, if the tokens leave room
         if (spare > 5) translate([column_x, wall, fz0]) rbox([column_w, spare, h], ri);
-
-        // anti-warp texture on the underside, kept off the card slot ceiling
-        translate([0, 0, z0]) difference() {
-            warp_relief([w, d], relief_pitch, relief_bar);
-            translate([wall - 0.5, d - wall - card_slot_l - 0.5, -1]) cube([card_slot_w + 1, card_slot_l + wall + 2, 2]);
-        }
     }
 }
 
