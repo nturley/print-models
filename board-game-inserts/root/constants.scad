@@ -48,10 +48,12 @@ card_push_hole_d = 16;   // under the closed end of the card slot: push the card
 corner_r = 4;            // outer vertical corners of the base and top (inner corners: corner_r - wall)
 
 // ---- Base-to-top joint: two pins on the base, two holes in the top (press fit, tune by test print) ----
-pin_d = 5;
+pin_hole_d = 5.15;       // hole in the top piece (unchanged since the first prints)
+pin_fit = 0.25;          // hole diameter minus pin diameter: tune the pin, not the hole
+                         // (0.15 was perfect in orange PLA but too tight in green: filaments vary)
+pin_d = pin_hole_d - pin_fit;   // 4.9
 pin_h = 4;
 pin_chamfer = 0.6;       // lead-in on the pin tip
-pin_fit = 0.15;          // hole diameter over pin diameter (FDM holes print a little small)
 pin_hole_extra = 0.4;    // hole deeper than the pin, so the faces seat flush
 pin_hole_chamfer = 0.4;  // at the hole mouth (bed side): room for elephant's foot
 pin_inset = 6;           // four pins, one per corner, this far from the inside of both walls
