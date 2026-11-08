@@ -22,7 +22,8 @@ from .printers import DEFAULT_PRINTER, PRINTERS, Printer
 
 # Every Design built this session, so the pytest plugin can describe its parts
 # in the report that the viewer reads.
-REGISTRY: dict[str, "Design"] = {}
+REGISTRY: dict[str, "Design"] = {}  # design path (relative to REPO_ROOT) -> Design
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def openscad_exe() -> str:
@@ -255,11 +256,20 @@ class Design:
                     print_raw=self.build_dir / "raw" / f"{name}.stl" if spec.get("print") else None,
                 )
         self._rendered = False
-        REGISTRY[self.root.name] = self
+        REGISTRY[self.path] = self
+
+    @property
+    def path(self) -> str:
+        """Design folder relative to the repo root, e.g. "ball-bearing" or "board-game-inserts/root"."""
+        try:
+            return self.root.relative_to(REPO_ROOT).as_posix()
+        except ValueError:
+            return self.root.name
 
     @property
     def name(self) -> str:
-        return self.root.name
+        """File-name-safe id (download names): the path with "/" replaced by "-"."""
+        return self.path.replace("/", "-")
 
     def __getitem__(self, name: str) -> Part:
         return self._parts[name]

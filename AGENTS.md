@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Personal collection of 3D-printable designs. Each design is a top-level folder; there is no root build. The root `pyproject.toml` only holds the shared test tooling (see "Design tests and viewer"). Designs are OpenSCAD (`.scad`), Blender (`.blend`), or both. A few `hello-cq/` / `my-cq/` folders are Python CadQuery sandboxes and `solidpy/` is a SolidPython2 sandbox; each `.venv` self-ignores (that's why git status doesn't show them). `solidpy/example.py` generates `.scad` via `solid2`, renders STL through the OpenSCAD CLI, and ignores its `build/` output.
+Personal collection of 3D-printable designs. Each design is a folder (usually top-level; nested designs like `board-game-inserts/root` work too, identified by their repo-relative path); there is no root build. The root `pyproject.toml` only holds the shared test tooling (see "Design tests and viewer"). Designs are OpenSCAD (`.scad`), Blender (`.blend`), or both. A few `hello-cq/` / `my-cq/` folders are Python CadQuery sandboxes and `solidpy/` is a SolidPython2 sandbox; each `.venv` self-ignores (that's why git status doesn't show them). `solidpy/example.py` generates `.scad` via `solid2`, renders STL through the OpenSCAD CLI, and ignores its `build/` output.
 
 ## Building STLs
 

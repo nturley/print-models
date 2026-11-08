@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -52,13 +53,29 @@ PAGE = """<!doctype html>
 """
 
 
+def find_reports() -> list[Path]:
+    """Every <design>/build/report.json in the repo, including nested designs
+    (e.g. board-game-inserts/root). Skips hidden folders, virtualenvs and the site output."""
+    found = []
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        here = Path(dirpath)
+        if here.name == "build":
+            if "report.json" in filenames:
+                found.append(here / "report.json")
+            dirnames[:] = []
+            continue
+        dirnames[:] = [d for d in dirnames if not (d.startswith((".", "_")) or d.endswith("venv") or d in ("node_modules", "viewer"))]
+    return sorted(found)
+
+
 def build(out: Path) -> list[str]:
     if out.exists():
         shutil.rmtree(out)
     shutil.copytree(ROOT / "viewer", out / "viewer")
     cards, names, repo_url = [], [], None
-    for report_path in sorted(ROOT.glob("*/build/report.json")):
-        design = report_path.parent.parent.name
+    reports = find_reports()
+    for report_path in reports:
+        design = report_path.parent.parent.relative_to(ROOT).as_posix()
         report = json.loads(report_path.read_text(encoding="utf-8"))
         dest = out / design / "build"
         dest.mkdir(parents=True)
@@ -83,7 +100,7 @@ def build(out: Path) -> list[str]:
         )
         repo_url = repo_url or (repo and repo["url"])
         names.append(design)
-    generated = max((json.loads(p.read_text(encoding="utf-8"))["generated"] for p in ROOT.glob("*/build/report.json")), default="")
+    generated = max((json.loads(p.read_text(encoding="utf-8"))["generated"] for p in reports), default="")
     repo_line = (
         f' Source: <a href="{html.escape(repo_url)}">{html.escape(repo_url.removeprefix("https://"))}</a>.' if repo_url else ""
     )

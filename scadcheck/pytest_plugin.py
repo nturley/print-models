@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from .design import REGISTRY
+from .design import REGISTRY, REPO_ROOT
 from .exports import export_downloads, repo_info
 from .geom import Distance
 
@@ -23,7 +23,11 @@ _tests: dict[str, dict] = {}  # nodeid -> test info
 
 
 def _design_of(nodeid: str) -> str:
-    return nodeid.replace("\\", "/").split("/", 1)[0]
+    """The registered design whose folder contains this test (deepest match), so
+    designs can be nested, e.g. board-game-inserts/root."""
+    path = nodeid.split("::", 1)[0].replace("\\", "/")
+    matches = [key for key in REGISTRY if path.startswith(key + "/")]
+    return max(matches, key=len) if matches else path.split("/", 1)[0]
 
 
 @pytest.fixture
@@ -90,7 +94,7 @@ def pytest_sessionfinish(session):
             continue
         plate = design.plate
         printer = plate.printer
-        repo_root = design.root.parent
+        repo_root = REPO_ROOT
         readme = design.root / "README.md"
         report = {
             "design": name,
