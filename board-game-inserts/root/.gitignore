@@ -1,0 +1,2 @@
+# Printable layout sheets are generated; keep them out of git
+*.pdf
