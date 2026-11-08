@@ -43,6 +43,11 @@ finger_notch_w = 14;     // notch in the outer wall beside each token pocket
 finger_notch_keep = 2;   // wall left above the pocket floor (holds the bottom token)
 card_push_hole_d = 16;   // under the closed end of the card slot: push the cards out
 
+// ---- Anti-warp ----
+corner_r = 4;            // outer vertical corners of the base and top (inner corners: corner_r - wall)
+relief_pitch = 10;       // bottom texture: V-groove grid spacing
+relief_bar = 0.4;        // groove bar size (depth = bar / sqrt(2) ~ 0.28)
+
 // ---- Base-to-top joint: two pins on the base, two holes in the top (press fit, tune by test print) ----
 pin_d = 5;
 pin_h = 4;

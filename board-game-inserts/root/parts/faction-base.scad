@@ -2,9 +2,11 @@
 // face against the top piece (faction-top.scad), with two alignment pins that press into holes in it.
 // The slot is open at the back so the faction cards slide in and out sideways; the top piece's
 // smooth bed-side floor is the slot's ceiling, so nothing bridges. Prints upright, no overhangs.
+// Rounded corners and a grooved bottom (anti-warp texture) keep the thin slab flat on the bed.
 // Render one with:  openscad -D 'faction="eyrie"' -o eyrie-base.stl faction-base.scad
 include <../constants.scad>
 use <../lib/faction-layout.scad>
+use <../../lib/print.scad>
 
 faction = "marquise";
 in_layout = true;   // place at its position in the insert (false: at the origin)
@@ -17,10 +19,10 @@ module faction_base(f) {
     cx = wall + card_slot_w / 2;
 
     difference() {
-        cube([w, d, h]);
+        rbox([w, d, h], corner_r);
 
         // card slot, open through the back wall
-        translate([wall, slot_y, floor_t]) cube([card_slot_w, card_slot_l + wall + 1, h]);
+        translate([wall, slot_y, floor_t]) rbox([card_slot_w, card_slot_l + wall + 1, h], corner_r - wall);
 
         // pinch notch through the floor at the slot opening
         translate([0, 0, -1]) hull() {
@@ -30,6 +32,9 @@ module faction_base(f) {
 
         // push hole under the closed end of the slot
         translate([cx, slot_y + card_push_hole_d / 2 + 4, -1]) cylinder(d = card_push_hole_d, h = floor_t + 2, $fn = 64);
+
+        // anti-warp texture on the bottom
+        warp_relief([w, d], relief_pitch, relief_bar);
     }
 
     // alignment pins, chamfered at the tip

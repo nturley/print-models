@@ -6,9 +6,11 @@
 //     the rim (hollow underneath), and a finger notch in the outer wall beside it.
 //   - Pin holes go up into small posts inside the pocket hollows.
 //   - No lid: in the box, the board stack caps every tray.
+//   - Rounded corners and a grooved underside (anti-warp texture), except over the card slot.
 // Render one with:  openscad -D 'faction="eyrie"' -o eyrie-top.stl faction-top.scad
 include <../constants.scad>
 use <../lib/faction-layout.scad>
+use <../../lib/print.scad>
 
 faction = "marquise";
 in_layout = true;
@@ -22,22 +24,23 @@ module faction_top_shell(f) {
     toks = faction_tokens(f);
     pockets = token_pockets(f);
     spare = spare_length(f);
+    ri = corner_r - wall;   // inner corners keep the wall thickness at the rounded outer corners
 
     difference() {
-        translate([0, 0, z0]) cube([w, d, h - z0]);
+        translate([0, 0, z0]) rbox([w, d, h - z0], corner_r);
 
         // warrior bin, full inside depth
-        translate([wall, wall, fz0]) cube([bin_w, d - 2 * wall, h]);
+        translate([wall, wall, fz0]) rbox([bin_w, d - 2 * wall, h], ri);
 
         for (i = [0 : len(pockets) - 1]) {
             p = pockets[i];
             fz = pocket_floor_z(f, toks[i]);
             yc = p[0] + p[1] / 2;
             // pocket, from its raised floor up through the rim
-            translate([column_x, p[0], fz]) cube([column_w, p[1], h]);
+            translate([column_x, p[0], fz]) rbox([column_w, p[1], h], ri);
             // hollow under the raised floor
             if (fz - pocket_floor_t > fz0 + 1)
-                translate([column_x, p[0], fz0]) cube([column_w, p[1], fz - pocket_floor_t - fz0]);
+                translate([column_x, p[0], fz0]) rbox([column_w, p[1], fz - pocket_floor_t - fz0], ri);
             // finger notch through the outer wall, rounded at the bottom
             nz = fz + finger_notch_keep;
             translate([w - wall - 1, yc, 0]) hull() {
@@ -47,7 +50,13 @@ module faction_top_shell(f) {
         }
 
         // spare compartment at the front of the column, if the tokens leave room
-        if (spare > 5) translate([column_x, wall, fz0]) cube([column_w, spare, h]);
+        if (spare > 5) translate([column_x, wall, fz0]) rbox([column_w, spare, h], ri);
+
+        // anti-warp texture on the underside, kept off the card slot ceiling
+        translate([0, 0, z0]) difference() {
+            warp_relief([w, d], relief_pitch, relief_bar);
+            translate([wall - 0.5, d - wall - card_slot_l - 0.5, -1]) cube([card_slot_w + 1, card_slot_l + wall + 2, 2]);
+        }
     }
 }
 

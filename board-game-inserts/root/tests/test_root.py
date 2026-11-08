@@ -105,10 +105,12 @@ def test_slot_headroom(root, measure, c, f):
 @pytest.mark.parametrize("f", FACTIONS)
 def test_printable_without_supports(root, measure, c, f, piece):
     """Printed upright, the only overhangs are the short ceilings over the token-pocket hollows:
-    nothing hangs over the cards or the warrior bin, so no bridge is wider than the token column."""
+    nothing hangs over the cards or the warrior bin, so no bridge is wider than the token column.
+    (The anti-warp grooves in the bottom face, ~0.3 mm deep, are ignored.)"""
     m = root[f"{f}-{piece}"].mesh
     steep = -m.face_normals[:, 2] > np.cos(np.radians(45))
-    on_bed = m.triangles[:, :, 2].max(axis=1) < m.bounds[0, 2] + TOL
+    groove_depth = c["relief_bar"] / np.sqrt(2)
+    on_bed = m.triangles[:, :, 2].max(axis=1) < m.bounds[0, 2] + groove_depth + TOL
     tri = m.triangles[steep & ~on_bed]
     measure(f"{f}-{piece} overhang", float(m.area_faces[steep & ~on_bed].sum()), units="mm²")
     if len(tri):

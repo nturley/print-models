@@ -174,6 +174,17 @@ Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
 (`-D 'faction="eyrie"'`), `parts/faction-box.scad` (the two glued, for viewing),
 `root-insert.scad` (assembly). Tests: `uv run pytest board-game-inserts/root`.
 
+### Printing
+
+- Both pieces print upright, no supports.
+- **Warping:** the first Marquise base (a thin 91 × 106.5 slab) lifted at the
+  corners and failed. Since then, both pieces have **4 mm rounded corners** and
+  an **anti-warp texture**: a 10 mm grid of 0.3 mm V-grooves in the bottom face
+  (`warp_relief()` in `board-game-inserts/lib/print.scad`, same trick as the
+  motor car frame), kept off the card slot ceiling on the top piece. Also
+  clean the plate (soap and water / IPA), check the bed temperature, and use a
+  5–8 mm brim if corners still lift.
+
 ### First test print: things to check
 
 - Pin fit: too tight, too loose, or a good press fit? Tune `pin_fit`
