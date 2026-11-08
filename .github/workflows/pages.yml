@@ -31,9 +31,11 @@ jobs:
 
       # The .blend files are saved by Blender 5.0, newer than Ubuntu's package, so use
       # the official build (cached: ~370 MB).
-      - name: Cache Blender
+      # restore/save rather than actions/cache, whose save is skipped when the job fails
+      # (and the job fails whenever a design has a known failing check).
+      - name: Restore Blender
         id: blender-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/blender
           key: blender-${{ env.BLENDER_VERSION }}-linux-x64
@@ -44,6 +46,13 @@ jobs:
           mkdir -p ~/blender
           curl -sSfL "https://download.blender.org/release/Blender${BLENDER_VERSION%.*}/blender-${BLENDER_VERSION}-linux-x64.tar.xz" \
             | tar -xJ -C ~/blender --strip-components=1
+
+      - name: Save Blender
+        if: steps.blender-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/blender
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
 
       - name: Use Blender
         run: |
