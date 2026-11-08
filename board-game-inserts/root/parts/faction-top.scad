@@ -3,7 +3,8 @@
 // Its floor is the card slot's ceiling. Prints upright (floor on the bed).
 //   - Warrior bin: 65 wide, full inside depth.
 //   - Token column on the right: one pocket per stack, floor raised so the stack ends just below
-//     the rim (hollow underneath), and a finger notch in the outer wall beside it.
+//     the rim (hollow underneath, with a 45° peaked roof so nothing bridges), and a finger notch
+//     in the outer wall beside it.
 //   - Pin holes go up into small posts inside the pocket hollows.
 //   - No lid: in the box, the board stack caps every tray.
 //   - Rounded corners (anti-warp).
@@ -38,9 +39,9 @@ module faction_top_shell(f) {
             yc = p[0] + p[1] / 2;
             // pocket, from its raised floor up through the rim
             translate([column_x, p[0], fz]) rbox([column_w, p[1], h], ri);
-            // hollow under the raised floor
+            // hollow under the raised floor, with a peaked roof (no bridging)
             if (fz - pocket_floor_t > fz0 + 1)
-                translate([column_x, p[0], fz0]) rbox([column_w, p[1], fz - pocket_floor_t - fz0], ri);
+                translate([column_x, p[0], fz0]) tent_hollow([column_w, p[1]], fz - pocket_floor_t - fz0, ri);
             // finger notch through the outer wall, rounded at the bottom
             nz = fz + finger_notch_keep;
             translate([w - wall - 1, yc, 0]) hull() {
@@ -49,8 +50,9 @@ module faction_top_shell(f) {
             }
         }
 
-        // spare compartment at the front of the column, if the tokens leave room
-        if (spare > 5) translate([column_x, wall, fz0]) rbox([column_w, spare, h], ri);
+        // leftover column space at the front (Eyrie, Vagabond): closed over flush with the rim so
+        // nothing falls in, hollow underneath with a peaked roof (no bridging)
+        if (spare > 5) translate([column_x, wall, fz0]) tent_hollow([column_w, spare], h - pocket_floor_t - fz0, ri);
     }
 }
 
@@ -60,9 +62,12 @@ module faction_top(f) {
     difference() {
         union() {
             faction_top_shell(f);
-            // posts for the pin holes, standing in the pocket hollows
-            for (p = pin_positions()) translate([p[0], p[1], top_floor_z(f) - eps])
-                cylinder(d = boss_d(), h = boss_top(f) - top_floor_z(f) + eps, $fn = 48);
+            // posts for the pin holes: in the token-pocket hollows, and a corner block in the
+            // warrior bin (blended into the corner so nothing can wedge behind it)
+            for (p = pin_positions()) translate([0, 0, top_floor_z(f) - eps]) hull() {
+                translate([p[0], p[1], 0]) cylinder(d = boss_d(), h = boss_top(f) - top_floor_z(f) + eps, $fn = 48);
+                if (!in_column(p)) translate([wall - eps, wall - eps, 0]) cube([1, 1, boss_top(f) - top_floor_z(f) + eps]);
+            }
         }
         // pin holes from the underside, with a chamfered mouth
         for (p = pin_positions()) translate([p[0], p[1], z0]) {

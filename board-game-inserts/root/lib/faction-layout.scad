@@ -6,7 +6,7 @@ function token_size(t) = t[0] == "round" ? round_token_d : square_tile;
 
 // Pockets along the token column, from the back wall forward: [[y_start, length], ...].
 // Spare column length is shared out as clearance, up to token_pocket_clr_max per pocket;
-// anything left over becomes a spare compartment at the front.
+// anything left over at the front is closed over (flush with the rim) in the top piece.
 function token_pockets(f) =
     let (
         toks = faction_tokens(f),
@@ -37,13 +37,24 @@ function pocket_floor_z(f, t) = max(top_floor_z(f), faction_box_h - t[1] * token
 function pin_positions() = [
     [column_x + column_w / 2, wall + pin_inset],
     [column_x + column_w / 2, faction_box_d - wall - pin_inset],
+    corner_pin_position(),
 ];
+// Third pin, on the warrior-bin side: front-left corner, on the base's solid strip in front of the
+// card slot. In the top piece its hole goes up into a small corner block in the warrior bin.
+function corner_pin_position() = [wall + corner_pin_inset, wall + corner_pin_inset];
+function in_column(pos) = pos[0] >= column_x && pos[0] <= column_x + column_w;
 function boss_d() = pin_d + pin_fit + 2 * boss_wall;
 function boss_top(f) = base_h(f) + pin_h + pin_hole_extra + floor_t;   // hole depth + a 1.2 mm cap
 
-// Each pin's post must fit under the raised floor of the pocket above it (or in the open spare compartment).
+// Each token-column pin's post must fit under the raised floor of the pocket above it
+// (or in the closed-over leftover space at the front). The corner pin's block sits in the warrior bin.
 function pin_post_fits(f) =
     let (toks = faction_tokens(f), p = token_pockets(f))
-    [for (pos = pin_positions())
+    [for (pos = pin_positions()) if (in_column(pos))
         let (hits = [for (i = [0 : len(p) - 1]) if (pos[1] >= p[i][0] && pos[1] <= p[i][0] + p[i][1]) i])
         len(hits) == 0 || boss_top(f) <= pocket_floor_z(f, toks[hits[0]]) - pocket_floor_t];
+
+// The corner pin must stand on solid base, in front of the card slot.
+function corner_pin_fits() =
+    let (pos = corner_pin_position(), slot_y = faction_box_d - wall - card_slot_l)
+    pos[1] + pin_d / 2 + 1 <= slot_y;

@@ -35,7 +35,8 @@ module faction_base(f) {
 
     }
 
-    // alignment pins, chamfered at the tip
+    // alignment pins, chamfered at the tip (two under the token column, one in the front-left corner)
+    assert(corner_pin_fits(), "corner pin doesn't fit in front of the card slot");
     for (p = pin_positions()) translate([p[0], p[1], h - eps]) {
         cylinder(d = pin_d, h = pin_h - pin_chamfer + eps, $fn = 48);
         translate([0, 0, pin_h - pin_chamfer + eps]) cylinder(d1 = pin_d, d2 = pin_d - 2 * pin_chamfer, h = pin_chamfer, $fn = 48);

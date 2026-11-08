@@ -146,29 +146,37 @@ glued together**, both open cups that print upright with no supports:
   against the top piece (the slicer's infill keeps the filament cost low). In
   the insert, the opening faces the box wall or a neighbouring tray, so cards
   can't slide out.
-- **Joint:** two **5 mm pins, 4 mm tall**, stand on the base (in the token
-  column strip, 10 mm from the front and back walls) and go into matching
-  holes in the top's underside. The holes are 0.15 mm larger than the pins
-  (`pin_fit`; FDM holes print slightly small, so this should come out as a
-  light press fit). They go up into small posts inside the token-pocket
-  hollows. Pin tips and hole mouths are chamfered. Glue is optional.
+- **Joint:** three **5 mm pins, 4 mm tall**, stand on the base and go into
+  matching holes in the top's underside:
+  - two in the token column strip, 10 mm from the front and back walls; their
+    holes go up into small posts inside the token-pocket hollows;
+  - one in the front-left corner (on the solid strip in front of the card
+    slot), so the bin side is held too; its hole goes up into a small corner
+    block in the warrior bin, blended into the walls.
+
+  The holes are 0.15 mm larger than the pins (`pin_fit`). On the first
+  Marquise print (two pins) this came out as a **good press fit, no glue
+  needed**. Pin tips and hole mouths are chamfered.
 - **Top** (`parts/faction-top.scad`): its 1.2 mm floor is the slot's ceiling,
   and since that's the side printed against the bed, the cards slide on a
   smooth face and **nothing bridges** (not over the cards, not over the slot
   mouth). The **warrior bin** (65 wide, full inside depth) sits on that floor,
   so cards come out without disturbing the warriors. Piles: Marquise ≈ 22 mm,
   Eyrie ≈ 17.5, Alliance ≈ 8.5.
-- The only overhangs are the 21.6 mm ceilings over the token-pocket hollows
-  (tested).
+- No bridges: the hollows have 45° peaked roofs (`tent_hollow()` in
+  `board-game-inserts/lib/print.scad`); the only flat overhangs left are the
+  5 mm tops of the pin holes (tested).
 - Press the top onto the base; add glue (CA or similar) on the flat joint
   face if the press fit is loose.
 - **Token column** beside the slot and bin, 21.6 mm wide behind a 1.2 mm
   divider. One pocket per stack, with its **floor raised so the stack ends
-  1 mm below the rim** (hollow underneath), and a **14 mm finger notch in the
+  1 mm below the rim** (hollow underneath, closed by a 45° peaked roof
+  so nothing bridges), and a **14 mm finger notch in the
   outer wall** beside each pocket, down to 2 mm above the pocket floor. In the
   insert, that wall presses against the next tray or the box wall, so nothing
-  escapes through the notch. Eyrie and Vagabond have a spare compartment at
-  the front of the column.
+  escapes through the notch. Eyrie and Vagabond have leftover column space at
+  the front: it's closed over flush with the rim (hollow underneath, peaked
+  roof) so nothing can fall in.
 
 Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
 (`-D 'faction="eyrie"'`), `parts/faction-box.scad` (the two glued, for viewing),
@@ -190,7 +198,10 @@ Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
     sharp corners, and the corners are rounded). **Bed 60 °C** for PLA. Clean
     the plate with dish soap and water first. Optionally 210 °C nozzle for
     matte PLA.
-  - If it still lifts: raise the minimum base height (~4 mm) to stiffen it.
+  - Print 3 (rounded corners, no texture, regular 5 mm brim, bed raised to
+    60 °C on the printer's screen during the print): **printed flat and
+    clean**. Use these settings.
+  - If it ever lifts again: raise the minimum base height (~4 mm) to stiffen it.
 
 ### First test print: things to check
 

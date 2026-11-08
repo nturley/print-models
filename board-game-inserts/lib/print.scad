@@ -7,6 +7,20 @@ module rbox(size, r, fn = 32) {
         translate([x, y, 0]) cylinder(r = r, h = size[2], $fn = fn);
 }
 
+// Closed hollow (to subtract) whose ceiling is a 45° peaked roof running along y, like a tent,
+// so it prints without bridging: straight sides, then two slopes meeting in a ridge at height h.
+// size: [w, l]; the roof needs w/2 of height. If h is less than that, the ridge is left flat
+// (a short bridge, w - 2h wide).
+module tent_hollow(size, h, r = 0) {
+    w = size[0];
+    l = size[1];
+    ridge_w = max(0.01, w - 2 * h);
+    hull() {
+        rbox([w, l, max(0.01, h - w / 2)], r);
+        translate([(w - ridge_w) / 2, 0, h - 0.01]) cube([ridge_w, l, 0.01]);
+    }
+}
+
 // Anti-warp texture for a large flat bottom: a grid of small V-grooves (square bars turned 45°
 // about their length, so each cuts a diamond-shaped track) at z = 0. Subtract it from the part.
 //   size: [w, d] area to cover; pitch: groove spacing; bar: bar side (groove depth = bar / sqrt(2)).
