@@ -20,15 +20,14 @@ module shared_deck_contents() {
 }
 
 module shared_token_contents() {
-    for (p = shared_pockets()) {
+    for (p = shared_pockets()) if (p[0][0] != "bowl") {   // suit markers lie loose in the bowl: not modelled
         t = p[0];
         s = stack_size(t);
         translate([p[1], p[2], stack_floor_z(t)])
             if (t[0] == "dice")   // side by side, touching, centred in the slot
                 for (k = [0 : t[1] - 1]) translate([(k - (t[1] - 1) / 2) * die_corner, 0, 0]) die_shape();
             else linear_extrude(stack_h(t)) {
-                if (t[0] == "suit") hull() for (k = [-1, 1]) translate([0, k * (s[1] - s[0]) / 2]) circle(d = s[0], $fn = 48);
-                else square(s, center = true);
+                square(s, center = true);
             }
     }
 }

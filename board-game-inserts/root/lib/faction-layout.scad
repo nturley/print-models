@@ -41,7 +41,7 @@ function pocket_floor_z(f, t) = max(top_floor_z(f), faction_box_h - token_stack_
 // One-piece box (Vagabond): top-loaded card pocket where the warrior bin would be, centred front to
 // back, floor raised so the cards end token_headroom below the rim.
 function top_card_origin() = [wall, (faction_box_d - card_slot_l) / 2];
-function top_card_floor_z(f) = faction_box_h - token_headroom - faction_cards_h(f);
+function top_card_floor_z(f) = faction_box_h - deck_headroom - faction_cards_h(f);   // cards get the deck's extra room
 
 // Alignment pins, one in each corner. On the base they stand on the solid strips beside and in
 // front of the (centred) card slot. In the top piece the two on the warrior-bin side go into the

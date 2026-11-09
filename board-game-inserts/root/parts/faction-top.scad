@@ -33,17 +33,17 @@ module faction_top_shell(f) {
         translate([0, 0, z0]) rbox([w, d, h - z0], corner_r);
 
         if (one_piece(f)) {
-            // top-loaded card pocket where the warrior bin would be, hollow underneath, and a finger
-            // notch through the left outer wall (it faces the next tray in the insert)
+            // top-loaded card pocket where the warrior bin would be, hollow underneath (except a solid
+            // column under the scoop), and a big finger scoop centred on the left outer wall: it cuts
+            // through the wall (which faces the next tray in the insert) and dips below the card floor
             o = top_card_origin();
             cfz = top_card_floor_z(f);
             translate([o[0], o[1], cfz]) rbox([card_slot_w, card_slot_l, h], ri);
-            translate([wall, wall, fz0]) tent_bays([bin_w, d - 2 * wall], cfz - pocket_floor_t - fz0, bay_max_w, divider_t, ri);
-            translate([-1, d / 2, 0]) hull() {
-                for (s = [-1, 1]) translate([0, s * (card_notch_w / 2 - notch_corner_r), cfz + notch_corner_r])
-                    rotate([0, 90, 0]) cylinder(r = notch_corner_r, h = wall + 2, $fn = 24);
-                translate([0, -card_notch_w / 2, h]) cube([wall + 2, card_notch_w, 1]);
+            translate([wall, wall, fz0]) difference() {
+                tent_bays([bin_w, d - 2 * wall], cfz - pocket_floor_t - fz0, bay_max_w, divider_t, ri);
+                translate([0, d / 2 - wall, -1]) cylinder(d = card_scoop_d + 2 * divider_t, h = h, $fn = 64);
             }
+            translate([wall, d / 2, cfz - deck_scoop_drop]) cylinder(d = card_scoop_d, h = h, $fn = 64);
         } else {
             // warrior bin, full inside depth, flat floor raised above the pin holes
             translate([wall, wall, bin_floor_z(f)]) rbox([bin_w, d - 2 * wall, h], ri);

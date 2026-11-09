@@ -67,7 +67,7 @@ and lie on top of the insert, so only their stack thickness matters.
 | 2 | Lid inside depth | |
 | 3 | Map board thickness (folded) | ≈ 14.2 |
 |   | Full stack: map + 4 player boards + Law of Root + single sheet + Learning to Play | ≈ 24 |
-|   | **Height budget** | 71 − 24 − ~1 lid clearance ≈ **46** insert height (Walking through Root goes on top if thin, or in a pocket) |
+|   | **Height budget** | 71 − 24 − 7 lid clearance = **40** insert height. (Was 46 with 1 mm clearance: the printed insert kept the box from closing, so trays were lowered; ~32 is the floor before warrior piles and stacks stop fitting.) |
 | 3a | Map board footprint (folded) | ≈ 203 × 276 (8 × 10⅞ in): ~3 mm spare lengthwise, ~13 mm widthwise |
 | 3b | Player boards (×4) footprint / stack | ≈ 213 × 278 (8⅜ × 10 15/16 in), the largest flat part, so the cavity is ≥ 278 long; stack of 4 ≈ 6.4 |
 | 3c | Law of Root booklet + same-size single sheet: footprint / thickness | |
@@ -98,7 +98,7 @@ and lie on top of the insert, so only their stack thickness matters.
 5. **Shake-proof in any orientation.** The box can be shaken, carried or
    stored on its side without anything mixing or coming loose:
    - **No lids: the board stack caps every tray.** All trays are the full
-     46 mm, the boards lie flat across them, and the box lid holds the boards
+     40 mm, the boards lie flat across them, and the box lid holds the boards
      within ~1 mm of the tray tops, which is too small a gap for a 2 mm token or a warrior.
      (Trays can spill if tipped while out of the box; accepted.)
    - Insert fills the cavity with ≤ 1 mm play.
@@ -122,7 +122,7 @@ and lie on top of the insert, so only their stack thickness matters.
 
 ## Layout direction (from the 3D sandbox)
 
-Current favourite: **"Matching faction boxes"**. All trays are full height (46).
+Current favourite: **"Matching faction boxes"**. All trays are full height (40).
 
 ```
 ┌──────────┬──────────┬─────────────────────┐
@@ -134,16 +134,17 @@ Current favourite: **"Matching faction boxes"**. All trays are full height (46).
    91         91          94      (rows 106.5 deep)
 ```
 
-**Faction box**: the same 91 × 106.5 × 46 outside for all four, with
+**Faction box**: the same 91 × 106.5 × 40 outside for all four, with
 parameters that differ per faction (card slot height, pockets). **Two pieces
 glued together**, both open cups that print upright with no supports:
 
 **Vagabond box: one piece.** The Vagabond has no warriors, so its box is just
 the top piece printed from the floor up (`one_piece()` in `constants.scad`):
 no base, no side slot, no pins. Its ~30 cards (8.2 mm) lie in a top-loaded
-65 × 90 pocket where the warrior bin would be, floor raised so they end 1 mm
-below the rim, with a 20 mm finger notch through the left wall (it faces the
-Alliance box in the insert) and peaked-roof hollows underneath. The pawn gets
+65 × 90 pocket where the warrior bin would be, floor raised so they end 5 mm
+below the rim (the deck's extra room for cards that thicken), with a **30 mm finger scoop** centred on the left wall: it cuts through
+the wall (which faces the Alliance box in the insert) and dips 5 mm below the
+card floor, over a solid column and peaked-roof hollows underneath. The pawn gets
 its own pocket in the token column. The other three factions keep the two-piece
 box below.
 
@@ -183,7 +184,7 @@ box below.
   face if the press fit is loose.
 - **Token column** beside the slot and bin, 21.6 mm wide behind a 1.2 mm
   divider. One pocket per stack, with its **floor raised so the stack ends
-  1 mm below the rim** (hollow underneath, closed by a 45° peaked roof
+  2.5 mm below the rim** (hollow underneath, closed by a 45° peaked roof
   so nothing bridges), and a **14 mm finger notch in the
   outer wall** beside each pocket, **flat-bottomed at the pocket floor** so a
   fingernail fits under the bottom token (narrower than any token, so none
@@ -258,24 +259,26 @@ Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
 - Are the finger notches big enough to tip tokens out of their pockets?
 
 **Shared tray** (`parts/shared-tray.scad`): one piece filling the right-hand
-column, 94 × 213 × 46 (fits the K2 bed).
+column, 94 × 213 × 40 (fits the K2 bed).
 
 - **Back half:** the 54-card deck in a 65 × 90 pocket centred in that half,
-  floor raised so the deck ends 1 mm below the rim, with a 20 mm finger scoop
-  halfway along each long side.
-- **Front half**, three rows, each spread evenly across the width, with the rows
-  spread evenly front to back:
-  - Back row: 3 suit marker stacks (rabbit, fox, mouse) in rounded oblong
-    pockets, long side running front to back (lying sideways would leave only
-    ≈ 1 mm between them).
-  - Middle row: **both dice in one long slot** across the tray, side by side,
-    with a 14 mm scoop at each end.
-  - Front row: 4 square stacks: the 12 supply items, ruins, and the 18 blank
-    spare tiles (two stacks of 9).
+  floor raised so the deck ends 5 mm below the rim (extra room: cards thicken as they age), with a **26 mm finger
+  scoop** on each long side (as big as fits inside the outer walls) that dips 5 mm
+  below the card floor (to get under the bottom card), over a solid column.
+- **Front half**, three rows:
+  - Back row: **one pill-shaped bowl** (curved both ways) across the tray for all 12 suit markers, loose (they
+    were too irregular for per-suit pockets): a trough with a curved floor,
+    34 mm front to back, 12 mm deep.
+  - Middle row: **both dice in one long slot**, with a **20 mm scoop** at each end.
+  - Front row: 4 square stacks (the 12 supply items, ruins, and the 18 blank
+    spare tiles as two stacks of 9) **against the front wall**, each with a
+    flat-bottomed finger notch through the wall down to its pocket floor,
+    like the faction boxes.
   - 0.75 mm clearance around every stack; floors raised so everything ends
-    1 mm below the rim; a 10 mm thumb scoop on the front edge of each token
-    pocket, down to the pocket floor (a fingernail fits under the bottom
-    token).
+    2.5 mm below the rim.
+- **Wood grain** on the four outer walls: horizontal grain lines cut 0.4 mm in
+  (added after rendering, in `tests/test_root.py` via `part.texture`; the .scad
+  stays smooth). The bottom 1 mm is left smooth for a clean first layer.
 - 4 mm rounded corners; hollow underneath in peaked-roof bays (`tent_bays()`,
   one set per half at that half's height), so it prints upright with no
   supports and no bridges (tested). Layout in `lib/shared-layout.scad`; rows

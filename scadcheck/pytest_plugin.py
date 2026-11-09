@@ -117,7 +117,7 @@ def pytest_sessionfinish(session):
                 {
                     "name": p.name,
                     "kind": p.kind,
-                    "stl": p.stl.relative_to(design.build_dir).as_posix(),
+                    "stl": p.view_stl.relative_to(design.build_dir).as_posix(),
                     "source": p.link_source.relative_to(repo_root).as_posix(),
                     "print_stl": f"print/{p.name}.stl" if p.kind == "part" else None,
                     "color": p.color,

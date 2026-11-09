@@ -8,12 +8,12 @@ box_inner_w = 279;      // cavity, long side
 box_inner_d = 216;      // cavity, short side
 box_inner_h = 71;       // lower box, floor to wall top
 board_stack_h = 24;     // map + 4 faction boards + Law of Root + sheet + Learning to Play
-lid_clearance = 1;      // so the box lid closes without pressing
+lid_clearance = 7;      // gap under the box lid (1 wasn't enough: the box didn't quite close). Trays are 40 tall.
 
 // ---- Insert envelope ----
 insert_w = 276;
 insert_d = 213;
-insert_h = box_inner_h - board_stack_h - lid_clearance;   // 46
+insert_h = box_inner_h - board_stack_h - lid_clearance;   // 40
 
 // ---- Components (measured) ----
 card_w = 63;
@@ -37,7 +37,7 @@ divider_t = 1.2;
 card_clr = 1;            // around the cards, each side
 slot_headroom = 1.5;     // above the card stack in the side-loading slot (0.8 was too tight to slide cards in)
 token_pocket_clr_max = 3;   // pockets get the column's spare length, up to this much extra
-token_headroom = 1;      // token stacks stop this far below the rim (the board stack caps the trays)
+token_headroom = 2.5;    // stacks (tokens, cards, deck) stop this far below the rim (1 mm felt too tight on the prints)
 pocket_floor_t = 1.2;    // raised pocket floor; hollow underneath
 finger_notch_w = 14;     // notch in the outer wall beside each token pocket (narrower than any token)
 finger_notch_keep = 0;   // notches and scoops reach the pocket floor: a fingernail fits under the bottom token
@@ -82,8 +82,11 @@ shared_tray_d = insert_d;                  // 213, the whole tray
 shared_d = insert_d / 2;                   // 106.5, each half (deck section, token section)
 shared_x = 2 * faction_box_w;              // 182
 deck_h = 19;             // 54-card shared deck (measured)
-deck_scoop_d = 20;       // finger scoops halfway along the deck's long sides
-suit_w = 14.7;           // winter suit markers (oblong), stored long side front to back
+deck_headroom = 5;       // above top-loaded card stacks (shared deck, Vagabond cards): more than the
+                         // tokens get, since cards thicken as they age
+deck_scoop_d = 26;       // finger scoops halfway along the deck's long sides (as big as fits inside the outer walls)
+deck_scoop_drop = 5;     // scoops go this far below the card floor, to get under the bottom card
+suit_w = 14.7;           // winter suit markers (irregular oblongs): loose in one bowl
 suit_l = 28.7;
 die_flat = 21.7;         // custom d12: height lying on a face
 die_corner = 25.5;       // widest point
@@ -92,15 +95,17 @@ icon_depth = 0.6;        // pocket icons debossed into the floors (floors are po
 icon_margin = 3;         // icon size = smallest pocket side minus this, each side
 icon_max = 13;
 bin_pocket_clr = 0.75;   // around the stack in the warrior-bin corner pocket (each side)
-thumb_scoop_d = 10;      // on the front edge of each token pocket in the shared tray
-die_scoop_d = 14;        // at each end of the dice slot
+suit_bowl_l = 34;        // suit-marker bowl, front to back: a trough with a curved floor
+suit_bowl_depth = 12;    // deepest point below the rim
+suit_bowl_margin = 3;    // from the side walls (the bowl spans the tray)
+die_scoop_d = 20;        // at each end of the dice slot
 bay_max_w = 22;          // hollow bays under raised floors: widest one whose 45° roof fits
 
 // Shared tray rows, back to front: [kind, stack count] per pocket
 shared_rows = [
-    [["suit", 4, ""], ["suit", 4, ""], ["suit", 4, ""]],                     // rabbit, fox, mouse (oblong pockets: no icon needed)
+    [["bowl", 12, ""]],                                                      // all 12 suit markers, loose (they're irregular)
     [["dice", 2, ""]],                                                       // both dice in one long slot (shape says it all: no icon)
-    [["square", 12, "swap-bag"], ["square", 4, "ancient-columns"], ["square", 9, ""], ["square", 9, ""]],   // supply items, ruins, 18 blank spare tiles
+    [["square", 12, "swap-bag"], ["square", 4, "ancient-columns"], ["square", 9, ""], ["square", 9, ""]],   // supply items, ruins, 18 blank spare tiles: against the front wall, notched
 ];
 
 // ---- Per-faction data ----
@@ -134,7 +139,8 @@ function faction_tokens(f) =
 function one_piece(f) = f == "vagabond";
 pawn_w = 16.5;           // Vagabond pawn, lying flat (assumed the cat warrior's size)
 pawn_l = 22;
-card_notch_w = 20;       // finger notch through the outer wall beside a top-loaded card pocket
+card_scoop_d = 30;       // finger scoop centred on the outer wall beside a top-loaded card pocket
+                         // (cuts through the wall and dips deck_scoop_drop below the card floor, like the deck's)
 
 // Extra pocket walled off in the warrior bin's back-right corner, next to the token column
 // (the Marquise column is full, so its keep goes here).

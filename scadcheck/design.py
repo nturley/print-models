@@ -163,6 +163,9 @@ class Part:
     # Which print bed this part goes on. Parts sharing a name are packed onto their own bed
     # (e.g. one bed per filament colour); unset parts share a single default bed.
     plate: str | None = None
+    # Surface texture cut into outer faces after rendering (see scadcheck/texture.py), e.g.
+    # {"kind": "wood_grain", "faces": ["-x", "+x", "-y", "+y"]}. Only ever cuts inward.
+    texture: dict | None = None
 
     @cached_property
     def raw_mesh(self) -> trimesh.Trimesh:
@@ -171,9 +174,23 @@ class Part:
 
     @cached_property
     def _repaired(self) -> tuple[trimesh.Trimesh, int]:
-        if self.blend_objects is None:
-            return self.raw_mesh, 0
-        return remove_interior_sheets(self.raw_mesh)
+        m, removed = (self.raw_mesh, 0) if self.blend_objects is None else remove_interior_sheets(self.raw_mesh)
+        return self._textured(m), removed
+
+    def _textured(self, m: trimesh.Trimesh) -> trimesh.Trimesh:
+        if not self.texture:
+            return m
+        from .texture import apply_texture
+        return apply_texture(m, self.texture)
+
+    @property
+    def view_stl(self) -> Path:
+        """The STL the viewer shows: the textured mesh if the part has a texture."""
+        if not self.texture:
+            return self.stl
+        out = self.stl.with_name(self.stl.stem + "-textured.stl")
+        self.mesh.export(out)
+        return out
 
     @property
     def interior_faces_removed(self) -> int:
@@ -194,7 +211,7 @@ class Part:
     @cached_property
     def print_mesh(self) -> trimesh.Trimesh:
         """The part as printed: print orientation, centred in x/y, resting on z=0."""
-        m = (trimesh.load(self.print_raw, force="mesh") if self.print_source else self.mesh).copy()
+        m = (self._textured(trimesh.load(self.print_raw, force="mesh")) if self.print_source else self.mesh).copy()
         m.apply_transform(self.print_matrix)
         lo, hi = m.bounds
         m.apply_translation([-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, -lo[2]])

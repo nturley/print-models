@@ -46,6 +46,8 @@ for _f in FACTIONS:
             ROOT[_p].color = COLORS[_f]
     ROOT[f"{_f}-cards"].color = ROOT[f"{_f}-tokens"].color = "#efe6d2"
 ROOT["shared-tray"].color = "#b9955a"
+# wood grain on the four outer walls (horizontal lines, cut 0.4 mm in); rims, pockets and icons stay smooth
+ROOT["shared-tray"].texture = {"kind": "wood_grain", "faces": ["-x", "+x", "-y", "+y"], "depth": 0.4}
 ROOT["shared-deck-cards"].color = ROOT["shared-token-stacks"].color = "#efe6d2"
 
 # One print bed per filament colour: each faction's pieces print together, and the shared tray alone.
@@ -170,10 +172,10 @@ def test_warrior_bin_holds_pile(measure, c, f):
 
 
 def test_vagabond_cards_on_top(root, measure, c):
-    """The Vagabond's cards lie in the top-loaded pocket, ending just below the rim (capped by the boards)."""
+    """The Vagabond's cards lie in the top-loaded pocket, deck_headroom below the rim (room to thicken)."""
     gap = _box_bounds(root, "vagabond")[1][2] - bounds(root["vagabond-cards"])[1, 2]
-    measure("vagabond rim − top of cards", gap, min=c["token_headroom"] - TOL, max=c["token_headroom"] + TOL)
-    assert abs(gap - c["token_headroom"]) <= TOL
+    measure("vagabond rim − top of cards", gap, min=c["deck_headroom"] - TOL, max=c["deck_headroom"] + TOL)
+    assert abs(gap - c["deck_headroom"]) <= TOL
 
 
 def test_vagabond_one_piece(root, measure, c):
@@ -207,10 +209,12 @@ def test_whole_insert_fills_envelope(root, measure, c):
 
 @pytest.mark.parametrize("contents", SHARED_CONTENTS)
 def test_shared_contents_below_rim(root, measure, c, contents):
-    """The deck / every stack and the dice end just below the rim, so the board stack caps them."""
+    """The deck and every stack end below the rim by their headroom (the deck gets extra: cards
+    thicken with age), so the board stack caps them."""
+    want = c["deck_headroom"] if contents == "shared-deck-cards" else c["token_headroom"]
     gap = bounds(root["shared-tray"])[1, 2] - bounds(root[contents])[1, 2]
-    measure(f"{contents}: rim − top", gap, min=c["token_headroom"] - TOL, max=c["token_headroom"] + TOL)
-    assert abs(gap - c["token_headroom"]) <= TOL
+    measure(f"{contents}: rim − top", gap, min=want - TOL, max=want + TOL)
+    assert abs(gap - want) <= TOL
 
 
 def test_deck_centred(root, measure, c):
@@ -262,3 +266,20 @@ def test_icon_cuts_cleanly(tmp_path, measure, name):
     assert "not closed" not in run.stderr, f"{name}: OpenSCAD rejected the icon mesh"
     removed = measure(f"{name} icon cut volume", 800 - trimesh.load(out).volume, min=5, units="mm³")
     assert removed >= 5, f"{name}: the icon didn't cut into the part"
+
+
+def test_suit_bowl_holds_markers(measure, c):
+    """The suit-marker bowl holds all 12 loose markers (bounding boxes at the usual pile looseness)."""
+    half, dd = c["suit_bowl_l"] / 2, c["suit_bowl_depth"]
+    r = (half * half + dd * dd) / (2 * dd)
+    segment = r * r * np.arccos((r - dd) / r) - (r - dd) * np.sqrt(2 * r * dd - dd * dd)   # trough cross-section
+    length = c["shared_w"] - 2 * c["wall"] - 2 * c["suit_bowl_margin"] - c["suit_bowl_l"] / 2   # rounded ends ~ lose half
+    need = 12 * c["suit_w"] * c["suit_l"] * c["token_t"] / PILE_LOOSENESS
+    have = measure("suit bowl volume", segment * length / 1000, min=need / 1000, units="cm³")
+    assert have >= need / 1000, "the suit bowl is too small for 12 loose markers"
+
+
+def test_deck_scoop_below_cards(root, measure, c):
+    """The deck scoops dip below the card floor, so a finger gets under the bottom card."""
+    measure("deck scoop drop below the card floor", c["deck_scoop_drop"], min=3)
+    assert c["deck_scoop_drop"] >= 3
