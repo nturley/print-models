@@ -108,6 +108,11 @@ def pytest_sessionfinish(session):
                 "plate": [list(pt) for pt in printer.plate] if printer.plate else None,
             },
             "plate_size": [round(v, 3) for v in plate.size],
+            # beds in order; a design without plate groups has one, named ""
+            "plates": [
+                {"name": g, "size": [round(v, 3) for v in pl.size], "parts": list(pl.transforms)}
+                for g, pl in design.plates.items()
+            ],
             "parts": [
                 {
                     "name": p.name,
@@ -120,6 +125,7 @@ def pytest_sessionfinish(session):
                     "size": [round(v, 3) for v in (p.print_mesh if p.kind == "part" else p.mesh).extents],
                     # row-major 4x4 placing print_stl on the print bed (printed parts only)
                     "plate": plate.transforms[p.name].round(6).ravel().tolist() if p.name in plate.transforms else None,
+                    "plate_group": design.plate_of(p.name) if p.name in plate.transforms else None,
                 }
                 for p in design
             ],

@@ -59,17 +59,21 @@ def export_downloads(design: Design) -> list[dict]:
     w, d, _ = plate.printer.volume
     downloads = []
 
-    # 3MF of the whole plate, in slicer bed coordinates (origin at the front-left corner).
+    # 3MF of each plate, in slicer bed coordinates (origin at the front-left corner).
     to_bed = np.eye(4)
     to_bed[:3, 3] = [w / 2, d / 2, 0]
-    placed = []
-    for p in design.printed():
-        m = p.print_mesh.copy()
-        m.apply_transform(to_bed @ plate.transforms[p.name])
-        placed.append((p.name, m))
-    plate_file = out / f"{design.name}-plate.3mf"
-    write_3mf(plate_file, placed)
-    downloads.append({"label": f"Plate for {plate.printer.name} (.3mf)", "file": plate_file.name})
+    for group, pl in design.plates.items():
+        placed = []
+        for p in design.printed():
+            if p.name in pl.transforms:
+                m = p.print_mesh.copy()
+                m.apply_transform(to_bed @ pl.transforms[p.name])
+                placed.append((p.name, m))
+        slug = re.sub(r"[^a-z0-9]+", "-", group.lower()).strip("-")
+        plate_file = out / (f"{design.name}-plate-{slug}.3mf" if slug else f"{design.name}-plate.3mf")
+        write_3mf(plate_file, placed)
+        label = f"Plate: {group} ({pl.printer.name}, .3mf)" if group else f"Plate for {pl.printer.name} (.3mf)"
+        downloads.append({"label": label, "file": plate_file.name})
 
     if design.print_in_place:
         # One STL of everything as assembled: separate files would lose the in-place fit.

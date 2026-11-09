@@ -303,9 +303,47 @@ let view = 'assembly';
 const bed = new THREE.Group(); bed.visible = false; scene.add(bed);
 const identity = new THREE.Matrix4();
 
+// A label lying on the bed, in front of it (canvas texture on a plane).
+function bedLabel(text, W, D) {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = '#c9ced6'; g.font = '600 72px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, 512, 64);
+  const tex = new THREE.CanvasTexture(c);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.8, W * 0.1),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+  m.position.set(0, -D / 2 - 22, 0);
+  return m;
+}
+
 function buildBed(report) {
   const pr = report.printer; if (!pr) return;
   const [W, D, H] = pr.volume;
+  // one bed per plate group, side by side (designs without groups have a single bed named "")
+  const plates = report.plates?.length ? report.plates : [{ name: '', size: report.plate_size || [0, 0, 0] }];
+  const gap = 60, n = plates.length;
+  const offsets = {};
+  plates.forEach((pl, i) => { offsets[pl.name] = (i - (n - 1) / 2) * (W + gap); });
+  for (const pl of plates) {
+    const one = new THREE.Group();
+    one.position.x = offsets[pl.name];
+    one.add(...bedPieces(pr, W, D, H));
+    if (pl.name) one.add(bedLabel(pl.name, W, D));
+    bed.add(one);
+  }
+  bed.userData = { W, D, H, offsets, totalW: n * W + (n - 1) * gap };
+
+  const fmt = v => +v.toFixed(1);
+  const rows = plates.map(pl => {
+    const pct = (100 * pl.size[0] * pl.size[1] / (W * D)).toFixed(1);
+    return `${pl.name ? `<b>${pl.name}</b>: ` : 'Parts use '}${pl.size.map(fmt).join(' × ')} mm (${pct}% of the bed)`;
+  });
+  document.getElementById('bedinfo').innerHTML =
+    `<b>${pr.name}</b>${n > 1 ? ` · ${n} beds` : ''}<br>Build volume ${W} × ${D} × ${H} mm<br>` +
+    rows.join('<br>') + `<br><span class="sub">Grid: 10 mm</span>`;
+}
+
+function bedPieces(pr, W, D, H) {
   // build plate outline (or a plain margin around the printable area)
   const outline = pr.plate || [[-W/2 - 8, D/2 + 8], [W/2 + 8, D/2 + 8], [W/2 + 8, -D/2 - 8], [-W/2 - 8, -D/2 - 8]];
   const shape = new THREE.Shape(outline.map(([x, y]) => new THREE.Vector2(x, y)));
@@ -324,15 +362,7 @@ function buildBed(report) {
   const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W, D, H)),
     new THREE.LineDashedMaterial({ color: 0x8a8f98, dashSize: 4, gapSize: 3 }));
   edges.computeLineDistances(); edges.position.z = H / 2;
-  bed.add(plateMesh, area, grid, edges);
-  bed.userData = { W, D, H };
-
-  const used = report.plate_size || [0, 0, 0];
-  const pct = (100 * used[0] * used[1] / (W * D)).toFixed(1);
-  document.getElementById('bedinfo').innerHTML =
-    `<b>${pr.name}</b><br>Build volume ${W} × ${D} × ${H} mm<br>` +
-    `Parts use ${used.map(v => +v.toFixed(1)).join(' × ')} mm (${pct}% of the bed)<br>` +
-    `<span class="sub">Grid: 10 mm</span>`;
+  return [plateMesh, area, grid, edges];
 }
 
 function updateVisibility() {
@@ -356,7 +386,13 @@ function setView(v) {
   document.querySelectorAll('.meas.active').forEach(x => x.classList.remove('active'));
   for (const m of meshes) {
     m.group.matrixAutoUpdate = false;
-    m.group.matrix.copy(v === 'bed' && m.plate ? new THREE.Matrix4().set(...m.plate) : identity);
+    if (v === 'bed' && m.plate) {
+      // the part's place on its own bed, then that bed's offset in the row of beds
+      const shift = bed.userData.offsets?.[m.plate_group ?? ''] || 0;
+      m.group.matrix.copy(new THREE.Matrix4().makeTranslation(shift, 0, 0).multiply(new THREE.Matrix4().set(...m.plate)));
+    } else {
+      m.group.matrix.copy(identity);
+    }
     for (const child of m.group.children) child.geometry = m.geoms[v];
     m.group.matrixWorldNeedsUpdate = true;
     m.row.classList.toggle('disabled', v === 'bed' && m.kind === 'vitamin');
@@ -370,8 +406,8 @@ function setView(v) {
 
   box.makeEmpty(); for (const m of meshes) if (m.group.visible || v === 'assembly') box.expandByObject(m.group);
   if (v === 'bed' && bed.userData.W) {
-    const { W, D, H } = bed.userData;
-    frame(new THREE.Vector3(0, -D * 0.04, H * 0.3), Math.hypot(W, D, H) * 1.05, new THREE.Vector3(0.6, -1.3, 1.0));
+    const { W, D, H, totalW } = bed.userData;
+    frame(new THREE.Vector3(0, -D * 0.04, H * 0.3), Math.hypot(totalW || W, D, H) * 1.05, new THREE.Vector3(0.6, -1.3, 1.0));
   } else {
     frame(box.getCenter(new THREE.Vector3()), box.getSize(new THREE.Vector3()).length() * 0.9, new THREE.Vector3(0.9, -1.3, 1.0));
   }

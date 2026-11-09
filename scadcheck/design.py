@@ -160,6 +160,9 @@ class Part:
     # How the part goes on the bed, as OpenSCAD rotate([x, y, z]) degrees, applied to
     # the print geometry (print_source if set, else the assembled part).
     print_rotation: tuple[float, float, float] = (0, 0, 0)
+    # Which print bed this part goes on. Parts sharing a name are packed onto their own bed
+    # (e.g. one bed per filament colour); unset parts share a single default bed.
+    plate: str | None = None
 
     @cached_property
     def raw_mesh(self) -> trimesh.Trimesh:
@@ -285,10 +288,30 @@ class Design:
         return PRINTERS[self.printer]
 
     @cached_property
-    def plate(self) -> "Plate":
+    def plates(self) -> dict[str, "Plate"]:
+        """One bed layout per plate group (part.plate), in first-seen order. A design whose
+        parts don't set part.plate has a single bed, named ""."""
         if self.print_in_place:
-            return layout_in_place(self.printed(), self.printer_spec)
-        return layout_plate(self.printed(), self.printer_spec, self.plate_spacing)
+            return {"": layout_in_place(self.printed(), self.printer_spec)}
+        groups: dict[str, list[Part]] = {}
+        for p in self.printed():
+            groups.setdefault(p.plate or "", []).append(p)
+        return {g: layout_plate(ps, self.printer_spec, self.plate_spacing) for g, ps in groups.items()}
+
+    @cached_property
+    def plate(self) -> "Plate":
+        """Every printed part's bed transform. With several plates, size is the largest
+        extent on any one bed, so .fits means every bed fits."""
+        plates = list(self.plates.values())
+        if len(plates) == 1:
+            return plates[0]
+        transforms = {k: v for pl in plates for k, v in pl.transforms.items()}
+        size = tuple(float(max(pl.size[i] for pl in plates)) for i in range(3))
+        return Plate(self.printer_spec, transforms, size)
+
+    def plate_of(self, name: str) -> str:
+        """The plate group a printed part is on."""
+        return next(g for g, pl in self.plates.items() if name in pl.transforms)
 
     def ready(self) -> "Design":
         """Render once (on first use) and return self; later calls are free."""

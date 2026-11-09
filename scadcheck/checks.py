@@ -110,7 +110,7 @@ def standard_checks(
 
     if printed:
         def test_plate_fits(measure):
-            """All printed parts fit on one plate together."""
+            """All printed parts fit on one plate together (with plate groups: each bed fits)."""
             plate = design.ready().plate
             w, d, h = plate.printer.volume
             measure("plate width used", plate.size[0], max=w)
