@@ -13,6 +13,8 @@ function is_svg_icon(name) = len([for (s = svg_icons()) if (s == name) 1]) > 0;
 module icon(name, size = 12) {
     if (name == "") { }
     else if (is_svg_icon(name))
-        scale(size / 512) import(str("icons/", name, ".svg"), dpi = 25.4, center = true);
+        // offset() redraws the outline: some SVG paths overlap themselves, and without this
+        // CGAL rejects the extruded icon ("mesh is not closed") and silently cuts nothing
+        offset(delta = 0.001) scale(size / 512) import(str("icons/", name, ".svg"), dpi = 25.4, center = true);
     else assert(false, str("unknown icon: ", name));
 }

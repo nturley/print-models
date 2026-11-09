@@ -5,6 +5,8 @@ card slot) and the top (warrior bin + token column). The Vagabond box is one pie
 its cards lie in a top-loaded pocket and its pawn goes in the token column.
 """
 
+import re
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -12,7 +14,7 @@ import numpy as np
 import pytest
 
 from scadcheck import Design, bounds, min_distance, overhang_area, standard_checks
-from scadcheck.design import scad
+from scadcheck.design import openscad_exe, scad
 
 FACTIONS = ["marquise", "eyrie", "alliance", "vagabond"]
 TWO_PIECE = ["marquise", "eyrie", "alliance"]
@@ -46,12 +48,15 @@ for _f in FACTIONS:
 ROOT["shared-tray"].color = "#b9955a"
 ROOT["shared-deck-cards"].color = ROOT["shared-token-stacks"].color = "#efe6d2"
 
-# watertight, fits printer, rests flat, no interference (contents included; base and top only touch).
-# Not "plate fits": each faction prints in its own colour, so a print is one base + its top;
-# all 8 pieces together don't fit one bed.
-_checks = standard_checks(ROOT)
-_checks.pop("test_plate_fits", None)
-globals().update(_checks)
+# One print bed per filament colour: each faction's pieces print together, and the shared tray alone.
+PLATES = {"marquise": "Marquise", "eyrie": "Eyrie", "alliance": "Alliance", "vagabond": "Vagabond"}
+for _p in ROOT.printed():
+    _f = _p.name.split("-")[0]
+    _p.plate = PLATES.get(_f, "Shared")
+
+# watertight, fits printer, every bed fits, rests flat, no interference (contents included;
+# base and top only touch)
+globals().update(standard_checks(ROOT))
 
 
 @pytest.fixture(scope="module")
@@ -236,3 +241,24 @@ def test_icons_leave_floor(measure, c):
     """Pocket icons are debossed into the floors without getting close to the hollows underneath."""
     left = measure("floor left under an icon", c["pocket_floor_t"] - c["icon_depth"], min=0.5)
     assert left >= 0.5, "icons cut too deep into the pocket floors"
+
+
+def _svg_icons():
+    text = (Path(__file__).parents[1] / "lib" / "icons.scad").read_text(encoding="utf-8")
+    return re.findall(r'"([a-z-]+)"', re.search(r"function svg_icons\(\) = \[(.*?)\];", text, re.S).group(1))
+
+
+@pytest.mark.parametrize("name", _svg_icons())
+def test_icon_cuts_cleanly(tmp_path, measure, name):
+    """Each SVG icon actually cuts into a part: CGAL silently skips a broken (not closed) icon."""
+    import trimesh
+    lib = (Path(__file__).parents[1] / "lib" / "icons.scad").as_posix()
+    src = tmp_path / "icon.scad"
+    src.write_text(f'use <{lib}>\n'
+                   f'difference() {{ translate([-10, -10, 0]) cube([20, 20, 2]); '
+                   f'translate([0, 0, 1.4]) linear_extrude(1) icon("{name}", 13); }}\n', encoding="utf-8")
+    out = tmp_path / "icon.stl"
+    run = subprocess.run([openscad_exe(), "-o", str(out), str(src)], capture_output=True, text=True)
+    assert "not closed" not in run.stderr, f"{name}: OpenSCAD rejected the icon mesh"
+    removed = measure(f"{name} icon cut volume", 800 - trimesh.load(out).volume, min=5, units="mm³")
+    assert removed >= 5, f"{name}: the icon didn't cut into the part"
