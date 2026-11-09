@@ -184,6 +184,17 @@ glued together**, both open cups that print upright with no supports:
   the front: it's closed over flush with the rim (hollow underneath, peaked
   roof) so nothing can fall in.
 
+**Where the tokens go** (from the Law of Root, as transcribed at
+therootdatabase.com):
+
+| Box | Token column (back to front) |
+|---|---|
+| Marquise | wood, keep, sawmills, workshops, recruiters; **score marker** in a walled pocket in the warrior bin's back-left corner (the column is full) |
+| Eyrie | roosts, **score marker** |
+| Alliance | sympathy, bases, **score marker** |
+| Vagabond | relationship markers, **11 Vagabond-only items** (4 ruin items + 7 starting items, used only with the Vagabond: 9.3.4–9.3.5), **score marker** |
+| Shared tray | 12 supply items (placed every game: 5.1.5), ruins (every game: 5.1.4), suit markers, dice, deck, 18 blank spare tiles (not on the components list) |
+
 Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
 (`-D 'faction="eyrie"'`), `parts/faction-box.scad` (the two glued, for viewing),
 `root-insert.scad` (assembly). Tests: `uv run pytest board-game-inserts/root`.
@@ -230,7 +241,8 @@ column, 94 × 213 × 46 (fits the K2 bed).
     ≈ 1 mm between them).
   - Middle row: **both dice in one long slot** across the tray, side by side,
     with a 14 mm scoop at each end.
-  - Front row: 4 square stacks: items ×2 (12 + 11), ruins, score markers.
+  - Front row: 4 square stacks: the 12 supply items, ruins, and the 18 blank
+    spare tiles (two stacks of 9).
   - 0.75 mm clearance around every stack; floors raised so everything ends
     1 mm below the rim; a 10 mm thumb scoop on the front edge of each token
     pocket, down to the pocket floor (a fingernail fits under the bottom

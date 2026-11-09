@@ -109,27 +109,19 @@ def test_slot_headroom(root, measure, c, f):
 @pytest.mark.parametrize("piece", ["base", "top"])
 @pytest.mark.parametrize("f", FACTIONS)
 def test_printable_without_supports(root, measure, c, f, piece):
-    """Printed upright, the only overhangs are the short ceilings over the token-pocket hollows
-    and the ~5 mm ceilings of the pin holes: nothing hangs over the cards or the warrior bin,
-    so no bridge is wider than the token column."""
+    """Printed upright, nothing bridges: every hollow has a 45° peaked roof, so the only flat
+    downward faces are the ~5 mm ceilings of the pin holes."""
     m = root[f"{f}-{piece}"].mesh
-    steep = -m.face_normals[:, 2] > np.cos(np.radians(45))
-    on_bed = m.triangles[:, :, 2].max(axis=1) < m.bounds[0, 2] + TOL
-    over = steep & ~on_bed
-    measure(f"{f}-{piece} overhang", float(m.area_faces[over].sum()), units="mm²")
-    # pin hole ceilings (and their mouth chamfers): small circles, allowed
+    flat_down = (m.face_normals[:, 2] < -0.99) & (m.triangles[:, :, 2].max(axis=1) > m.bounds[0, 2] + TOL)
     origin = bounds(root[f"{f}-base"])[0]
     inset = c["wall"] + c["pin_inset"]
     pins = [origin[:2] + [x, y] for x in (inset, c["faction_box_w"] - inset)
             for y in (inset, c["faction_box_d"] - inset)]
     hole_r = (c["pin_d"] + c["pin_fit"]) / 2 + c["pin_hole_chamfer"]
     in_hole = np.min([np.linalg.norm(m.triangles_center[:, :2] - p, axis=1) for p in pins], axis=0) <= hole_r + TOL
-    tri = m.triangles[over & ~in_hole]
-    if len(tri):
-        xs = tri[:, :, 0] - (origin[0] + c["column_x"])
-        span = xs.max() - xs.min()
-        measure(f"{f}-{piece} widest overhang", span, max=c["column_w"] + TOL)
-        assert xs.min() >= -TOL and xs.max() <= c["column_w"] + TOL, "overhang outside the token column"
+    area = measure(f"{f}-{piece} flat ceilings (not pin holes)", float(m.area_faces[flat_down & ~in_hole].sum()),
+                   max=TOL, units="mm²")
+    assert area <= TOL, "a flat ceiling (bridge) other than a pin hole top"
 
 
 def test_boxes_inside_insert(root, measure, c):

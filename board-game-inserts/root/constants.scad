@@ -88,6 +88,7 @@ suit_l = 28.7;
 die_flat = 21.7;         // custom d12: height lying on a face
 die_corner = 25.5;       // widest point
 shared_clr = 0.75;       // around each stack or die in the shared tray (each side)
+bin_pocket_clr = 0.75;   // around the stack in the warrior-bin corner pocket (each side)
 thumb_scoop_d = 10;      // on the front edge of each token pocket in the shared tray
 die_scoop_d = 14;        // at each end of the dice slot
 bay_max_w = 22;          // hollow bays under raised floors: widest one whose 45° roof fits
@@ -96,7 +97,7 @@ bay_max_w = 22;          // hollow bays under raised floors: widest one whose 45
 shared_rows = [
     [["suit", 4], ["suit", 4], ["suit", 4]],            // rabbit, fox, mouse
     [["dice", 2]],                                    // both dice in one long slot
-    [["square", 12], ["square", 11], ["square", 4], ["square", 4]],   // items, items, ruins, score
+    [["square", 12], ["square", 4], ["square", 9], ["square", 9]],   // supply items, ruins, 18 blank spare tiles
 ];
 
 // ---- Per-faction data ----
@@ -113,11 +114,17 @@ function faction_cards_h(f) =
     : f == "alliance" ? alliance_cards_h : vagabond_cards_h;
 
 // Token stacks in the column, listed from the back of the box forward: [shape, count]
+// Each faction keeps its own score marker. Items: the 12 supply items (placed every game, 5.1.5)
+// are in the shared tray; the other 11 (4 ruin + 7 Vagabond starting items, 9.3.4-9.3.5) are only
+// used with the Vagabond, so they live in its box.
 function faction_tokens(f) =
     f == "marquise" ? [["round", 8], ["round", 1], ["square", 6], ["square", 6], ["square", 6]]   // wood, keep, sawmills, workshops, recruiters
-    : f == "eyrie" ? [["square", 7]]                                                              // roosts
-    : f == "alliance" ? [["round", 10], ["square", 3]]                                           // sympathy, bases
-    : [["square", 3]];                                                                           // relationship markers
+    : f == "eyrie" ? [["square", 7], ["square", 1]]                                              // roosts, score marker
+    : f == "alliance" ? [["round", 10], ["square", 3], ["square", 1]]                            // sympathy, bases, score marker
+    : [["square", 3], ["square", 11], ["square", 1]];                                            // relationship markers, Vagabond items, score marker
+
+// Extra pocket walled off in the warrior bin's back-left corner (the Marquise column is full).
+function bin_corner_tokens(f) = f == "marquise" ? [["square", 1]] : [];                         // Marquise score marker
 
 // Where each box sits in the insert (2 x 2 block on the left; the shared tray on the right)
 function faction_pos(f) =

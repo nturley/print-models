@@ -42,7 +42,7 @@ module faction_top_shell(f) {
                 rbox([column_w, p[1], h], toks[i][0] == "round" ? min(column_w, p[1]) / 2 : ri);
             // hollow under the raised floor, with a peaked roof (no bridging)
             if (fz - pocket_floor_t > fz0 + 1)
-                translate([column_x, p[0], fz0]) tent_hollow([column_w, p[1]], fz - pocket_floor_t - fz0, ri);
+                translate([column_x, p[0], fz0]) tent_bays([column_w, p[1]], fz - pocket_floor_t - fz0, bay_max_w, divider_t, ri);
             // finger notch through the outer wall, flat-bottomed at the pocket floor (small rounded corners)
             nz = fz + finger_notch_keep;
             translate([w - wall - 1, yc, 0]) hull() {
@@ -54,7 +54,34 @@ module faction_top_shell(f) {
 
         // leftover column space at the front (Eyrie, Vagabond): closed over flush with the rim so
         // nothing falls in, hollow underneath with a peaked roof (no bridging)
-        if (spare > 5) translate([column_x, wall, fz0]) tent_hollow([column_w, spare], h - pocket_floor_t - fz0, ri);
+        if (spare > 5) translate([column_x, wall, fz0]) tent_bays([column_w, spare], h - pocket_floor_t - fz0, bay_max_w, divider_t, ri);
+    }
+}
+
+// Extra pocket walled off in the warrior bin's back-left corner (Marquise score marker): a solid
+// corner block from the bin floor to the rim, with the pocket, its peaked-roof hollow and a finger
+// notch through the left outer wall cut into it.
+module bin_pocket_block(f) {
+    s = bin_pocket_size();
+    o = bin_pocket_origin();
+    for (t = bin_corner_tokens(f))
+        translate([wall - eps, o[1] - divider_t, bin_floor_z(f) - eps])
+            cube([s + divider_t + eps, s + divider_t + eps, faction_box_h - bin_floor_z(f) + eps]);
+}
+
+module bin_pocket_cuts(f) {
+    s = bin_pocket_size();
+    o = bin_pocket_origin();
+    ri = corner_r - wall;
+    for (t = bin_corner_tokens(f)) {
+        fz = faction_box_h - token_headroom - t[1] * token_t;
+        translate([o[0], o[1], fz]) rbox([s, s, faction_box_h], ri);
+        translate([o[0], o[1], bin_floor_z(f)]) tent_bays([s, s], fz - pocket_floor_t - bin_floor_z(f), bay_max_w, divider_t, ri);
+        translate([-1, o[1] + s / 2, 0]) hull() {
+            for (sg = [-1, 1]) translate([0, sg * (finger_notch_w / 2 - notch_corner_r), fz + notch_corner_r])
+                rotate([0, 90, 0]) cylinder(r = notch_corner_r, h = wall + 2, $fn = 24);
+            translate([0, -finger_notch_w / 2, faction_box_h]) cube([wall + 2, finger_notch_w, 1]);
+        }
     }
 }
 
@@ -69,7 +96,9 @@ module faction_top(f) {
             // (the bin-side holes go into the bin's raised solid floor)
             for (p = pin_positions()) if (in_column(p)) translate([p[0], p[1], top_floor_z(f) - eps])
                 cylinder(d = boss_d(), h = boss_top(f) - top_floor_z(f) + eps, $fn = 48);
+            bin_pocket_block(f);
         }
+        bin_pocket_cuts(f);
         // pin holes from the underside, with a chamfered mouth
         for (p = pin_positions()) translate([p[0], p[1], z0]) {
             translate([0, 0, -1]) cylinder(d = pin_d + pin_fit, h = 1 + pin_h + pin_hole_extra, $fn = 48);

@@ -25,10 +25,12 @@ module tent_hollow(size, h, r = 0) {
 }
 
 // A row of tent_hollow() bays side by side across x, separated by ribs, filling [w, l] up to
-// height h. Bays are at most max_w wide, so each roof fits in the height (needs bay width / 2).
+// height h. Bays are at most max_w wide, and narrow enough that each full roof fits in the height
+// (a roof needs bay width / 2), so there's never a flat ridge to bridge.
 module tent_bays(size, h, max_w = 22, rib = 1.2, r = 0) {
     w = size[0];
-    n = max(1, ceil((w + rib) / (max_w + rib)));
+    bay = min(max_w, 2 * h);
+    n = max(1, ceil((w + rib) / (bay + rib)));
     bw = (w - (n - 1) * rib) / n;
     for (i = [0 : n - 1]) translate([i * (bw + rib), 0, 0]) tent_hollow([bw, size[1]], h, r);
 }

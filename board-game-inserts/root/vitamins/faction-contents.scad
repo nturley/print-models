@@ -10,6 +10,12 @@ module faction_contents(f, show = "all") {
     // card stack in the slot
     if (show != "tokens") translate([slot_x0() + card_clr, slot_y0() + card_clr, floor_t])
         cube([card_w, card_l, faction_cards_h(f)]);
+    // stack in the warrior bin's corner pocket (Marquise score marker)
+    if (show != "cards") for (t = bin_corner_tokens(f)) {
+        s = bin_pocket_size(); o = bin_pocket_origin(); h = t[1] * token_t;
+        translate([o[0] + s / 2 - square_tile / 2, o[1] + s / 2 - square_tile / 2, faction_box_h - token_headroom - h])
+            cube([square_tile, square_tile, h]);
+    }
     // token stacks, centred in their pockets, on the raised floors
     toks = faction_tokens(f);
     p = token_pockets(f);
