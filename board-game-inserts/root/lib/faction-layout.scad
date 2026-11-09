@@ -2,7 +2,8 @@
 include <../constants.scad>
 
 function sum(v, i = 0) = i >= len(v) ? 0 : v[i] + sum(v, i + 1);
-function token_size(t) = t[0] == "round" ? round_token_d : square_tile;
+function token_size(t) = t[0] == "round" ? round_token_d : t[0] == "pawn" ? pawn_l : square_tile;   // length along the column
+function token_stack_h(t) = t[0] == "pawn" ? warrior_t : t[1] * token_t;
 
 // Pockets along the token column, from the back wall forward: [[y_start, length], ...].
 // Spare column length is shared out as clearance, up to token_pocket_clr_max per pocket;
@@ -31,11 +32,16 @@ function bin_pocket_size() = square_tile + 2 * bin_pocket_clr;
 function bin_pocket_origin() = [wall + bin_w - bin_pocket_size(), faction_box_d - wall - bin_pocket_size()];
 
 function slot_height(f) = faction_cards_h(f) + slot_headroom;
-function base_h(f) = floor_t + slot_height(f);       // base height = where the top piece starts
+function base_h(f) = one_piece(f) ? 0 : floor_t + slot_height(f);   // where the top piece starts (0: one piece)
 function top_floor_z(f) = base_h(f) + floor_t;       // floor of the warrior bin
 
 // Pocket floor height: the stack's top ends token_headroom below the rim.
-function pocket_floor_z(f, t) = max(top_floor_z(f), faction_box_h - t[1] * token_t - token_headroom);
+function pocket_floor_z(f, t) = max(top_floor_z(f), faction_box_h - token_stack_h(t) - token_headroom);
+
+// One-piece box (Vagabond): top-loaded card pocket where the warrior bin would be, centred front to
+// back, floor raised so the cards end token_headroom below the rim.
+function top_card_origin() = [wall, (faction_box_d - card_slot_l) / 2];
+function top_card_floor_z(f) = faction_box_h - token_headroom - faction_cards_h(f);
 
 // Alignment pins, one in each corner. On the base they stand on the solid strips beside and in
 // front of the (centred) card slot. In the top piece the two on the warrior-bin side go into the

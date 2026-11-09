@@ -1,7 +1,8 @@
-"""Design rules for the Root faction boxes (see ../README.md).
+"""Design rules for the Root insert (see ../README.md).
 
-Each faction box is two printed pieces glued together: the base (card slot) and the top
-(warrior bin + token column).
+Marquise, Eyrie and Alliance boxes are two printed pieces pinned together: the base (side-loading
+card slot) and the top (warrior bin + token column). The Vagabond box is one piece: no warriors, so
+its cards lie in a top-loaded pocket and its pawn goes in the token column.
 """
 
 from pathlib import Path
@@ -14,8 +15,10 @@ from scadcheck import Design, bounds, min_distance, overhang_area, standard_chec
 from scadcheck.design import scad
 
 FACTIONS = ["marquise", "eyrie", "alliance", "vagabond"]
+TWO_PIECE = ["marquise", "eyrie", "alliance"]
+PRINTED = [f"{f}-{p}" for f in TWO_PIECE for p in ("base", "top")] + ["vagabond-box"]
 COLORS = {"marquise": "#d9782d", "eyrie": "#3d6fb4", "alliance": "#4e9a48", "vagabond": "#8b8f88"}
-WARRIORS = {"marquise": (25, 16.5, 22), "eyrie": (20, 16.5, 22), "alliance": (10, 18.7, 18.9), "vagabond": (1, 16.5, 22)}
+WARRIORS = {"marquise": (25, 16.5, 22), "eyrie": (20, 16.5, 22), "alliance": (10, 18.7, 18.9)}
 PILE_LOOSENESS = 0.55   # a loose pile fills ~55% of its bin (bounding boxes)
 MAX_PILE_DEPTH = 4      # warriors: bins must hold the pile no deeper than this
 TOL = 0.01
@@ -23,8 +26,9 @@ TOL = 0.01
 ROOT = Design(
     root=Path(__file__).parents[1],
     parts={
-        **{f"{f}-base": scad("parts/faction-base.scad", faction=f) for f in FACTIONS},
-        **{f"{f}-top": scad("parts/faction-top.scad", faction=f) for f in FACTIONS},
+        **{f"{f}-base": scad("parts/faction-base.scad", faction=f) for f in TWO_PIECE},
+        **{f"{f}-top": scad("parts/faction-top.scad", faction=f) for f in TWO_PIECE},
+        "vagabond-box": scad("parts/faction-top.scad", faction="vagabond"),   # one piece
         "shared-tray": "parts/shared-tray.scad",
     },
     vitamins={
@@ -35,7 +39,9 @@ ROOT = Design(
     },
 )
 for _f in FACTIONS:
-    ROOT[f"{_f}-base"].color = ROOT[f"{_f}-top"].color = COLORS[_f]
+    for _p in (f"{_f}-base", f"{_f}-top", f"{_f}-box"):
+        if _p in ROOT.parts:
+            ROOT[_p].color = COLORS[_f]
     ROOT[f"{_f}-cards"].color = ROOT[f"{_f}-tokens"].color = "#efe6d2"
 ROOT["shared-tray"].color = "#b9955a"
 ROOT["shared-deck-cards"].color = ROOT["shared-token-stacks"].color = "#efe6d2"
@@ -58,21 +64,25 @@ def c(root):
     return root.constants()
 
 
+def box_parts(f):
+    return [f"{f}-base", f"{f}-top"] if f in TWO_PIECE else [f"{f}-box"]
+
+
 def _box_bounds(root, f):
-    b, t = bounds(root[f"{f}-base"]), bounds(root[f"{f}-top"])
-    return np.minimum(b[0], t[0]), np.maximum(b[1], t[1])
+    bs = [bounds(root[p]) for p in box_parts(f)]
+    return np.min([b[0] for b in bs], axis=0), np.max([b[1] for b in bs], axis=0)
 
 
 @pytest.mark.parametrize("f", FACTIONS)
 def test_box_size(root, measure, c, f):
-    """Every glued faction box is the same size: 91 x 106.5 x 46."""
+    """Every faction box (assembled) is the same size: 91 x 106.5 x 46."""
     lo, hi = _box_bounds(root, f)
     for i, (axis, want) in enumerate(zip("xyz", (c["faction_box_w"], c["faction_box_d"], c["faction_box_h"]))):
         measure(f"{f} {axis} size", hi[i] - lo[i], min=want - TOL, max=want + TOL)
         assert abs(hi[i] - lo[i] - want) <= TOL
 
 
-@pytest.mark.parametrize("f", FACTIONS)
+@pytest.mark.parametrize("f", TWO_PIECE)
 def test_pieces_meet(root, measure, c, f):
     """The top sits flat on the base's top face, and the alignment pins stand pin_h above it
     (they sit in the top's holes: the no-interference check covers the fit)."""
@@ -85,7 +95,7 @@ def test_pieces_meet(root, measure, c, f):
     assert abs(pins - c["pin_h"]) <= TOL
 
 
-@pytest.mark.parametrize("f", FACTIONS)
+@pytest.mark.parametrize("f", TWO_PIECE)
 def test_pin_clearance(root, measure, c, f):
     """Each pin has pin_fit/2 of clearance all round in its hole (a light press fit once printed)."""
     # base and top touch along the joint, so measure from just the pins (the base above the joint)
@@ -98,7 +108,7 @@ def test_pin_clearance(root, measure, c, f):
     assert abs(d.distance - want) <= 0.01
 
 
-@pytest.mark.parametrize("f", FACTIONS)
+@pytest.mark.parametrize("f", TWO_PIECE)
 def test_slot_headroom(root, measure, c, f):
     """The top's floor (the slot ceiling) clears the cards by the slot headroom."""
     d = measure(f"{f} slot ceiling ↔ cards", min_distance(root[f"{f}-top"], root[f"{f}-cards"]),
@@ -106,20 +116,20 @@ def test_slot_headroom(root, measure, c, f):
     assert abs(d.distance - c["slot_headroom"]) <= TOL
 
 
-@pytest.mark.parametrize("piece", ["base", "top"])
-@pytest.mark.parametrize("f", FACTIONS)
-def test_printable_without_supports(root, measure, c, f, piece):
+@pytest.mark.parametrize("part", PRINTED)
+def test_printable_without_supports(root, measure, c, part):
     """Printed upright, nothing bridges: every hollow has a 45° peaked roof, so the only flat
     downward faces are the ~5 mm ceilings of the pin holes."""
-    m = root[f"{f}-{piece}"].mesh
+    f = part.split("-")[0]
+    m = root[part].mesh
     flat_down = (m.face_normals[:, 2] < -0.99) & (m.triangles[:, :, 2].max(axis=1) > m.bounds[0, 2] + TOL)
-    origin = bounds(root[f"{f}-base"])[0]
+    origin = _box_bounds(root, f)[0]
     inset = c["wall"] + c["pin_inset"]
     pins = [origin[:2] + [x, y] for x in (inset, c["faction_box_w"] - inset)
             for y in (inset, c["faction_box_d"] - inset)]
     hole_r = (c["pin_d"] + c["pin_fit"]) / 2 + c["pin_hole_chamfer"]
     in_hole = np.min([np.linalg.norm(m.triangles_center[:, :2] - p, axis=1) for p in pins], axis=0) <= hole_r + TOL
-    area = measure(f"{f}-{piece} flat ceilings (not pin holes)", float(m.area_faces[flat_down & ~in_hole].sum()),
+    area = measure(f"{part} flat ceilings (not pin holes)", float(m.area_faces[flat_down & ~in_hole].sum()),
                    max=TOL, units="mm²")
     assert area <= TOL, "a flat ceiling (bridge) other than a pin hole top"
 
@@ -141,7 +151,7 @@ def test_contents_below_rim(root, measure, c, f):
     assert abs(gap - c["token_headroom"]) <= TOL
 
 
-@pytest.mark.parametrize("f", FACTIONS)
+@pytest.mark.parametrize("f", TWO_PIECE)
 def test_warrior_bin_holds_pile(measure, c, f):
     """The warrior bin holds the loose pile no deeper than MAX_PILE_DEPTH warriors."""
     n, w, l = WARRIORS[f]
@@ -152,6 +162,20 @@ def test_warrior_bin_holds_pile(measure, c, f):
     limit = min(c["faction_box_h"] - bin_floor, MAX_PILE_DEPTH * c["warrior_t"])
     measure(f"{f} warrior pile depth", pile, max=limit)
     assert pile <= limit
+
+
+def test_vagabond_cards_on_top(root, measure, c):
+    """The Vagabond's cards lie in the top-loaded pocket, ending just below the rim (capped by the boards)."""
+    gap = _box_bounds(root, "vagabond")[1][2] - bounds(root["vagabond-cards"])[1, 2]
+    measure("vagabond rim − top of cards", gap, min=c["token_headroom"] - TOL, max=c["token_headroom"] + TOL)
+    assert abs(gap - c["token_headroom"]) <= TOL
+
+
+def test_vagabond_one_piece(root, measure, c):
+    """The Vagabond box is one part sitting on the box floor (no base, no pins)."""
+    lo, hi = bounds(root["vagabond-box"])
+    measure("vagabond box bottom", lo[2], min=-TOL, max=TOL)
+    assert abs(lo[2]) <= TOL and "vagabond-base" not in ROOT.parts
 
 
 # ---- Shared tray (right-hand column) ----
@@ -206,3 +230,9 @@ def test_shared_tray_no_bridges(root, measure):
     flat_down = (m.face_normals[:, 2] < -0.99) & (m.triangles[:, :, 2].max(axis=1) > m.bounds[0, 2] + TOL)
     area = measure("shared tray flat ceilings", float(m.area_faces[flat_down].sum()), max=TOL, units="mm²")
     assert area <= TOL
+
+
+def test_icons_leave_floor(measure, c):
+    """Pocket icons are debossed into the floors without getting close to the hollows underneath."""
+    left = measure("floor left under an icon", c["pocket_floor_t"] - c["icon_depth"], min=0.5)
+    assert left >= 0.5, "icons cut too deep into the pocket floors"

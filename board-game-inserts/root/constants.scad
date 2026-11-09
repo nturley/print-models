@@ -88,6 +88,9 @@ suit_l = 28.7;
 die_flat = 21.7;         // custom d12: height lying on a face
 die_corner = 25.5;       // widest point
 shared_clr = 0.75;       // around each stack or die in the shared tray (each side)
+icon_depth = 0.6;        // pocket icons debossed into the floors (floors are pocket_floor_t thick)
+icon_margin = 3;         // icon size = smallest pocket side minus this, each side
+icon_max = 13;
 bin_pocket_clr = 0.75;   // around the stack in the warrior-bin corner pocket (each side)
 thumb_scoop_d = 10;      // on the front edge of each token pocket in the shared tray
 die_scoop_d = 14;        // at each end of the dice slot
@@ -95,9 +98,9 @@ bay_max_w = 22;          // hollow bays under raised floors: widest one whose 45
 
 // Shared tray rows, back to front: [kind, stack count] per pocket
 shared_rows = [
-    [["suit", 4], ["suit", 4], ["suit", 4]],            // rabbit, fox, mouse
-    [["dice", 2]],                                    // both dice in one long slot
-    [["square", 12], ["square", 4], ["square", 9], ["square", 9]],   // supply items, ruins, 18 blank spare tiles
+    [["suit", 4, ""], ["suit", 4, ""], ["suit", 4, ""]],                     // rabbit, fox, mouse (oblong pockets: no icon needed)
+    [["dice", 2, ""]],                                                       // both dice in one long slot (shape says it all: no icon)
+    [["square", 12, "swap-bag"], ["square", 4, "ancient-columns"], ["square", 9, ""], ["square", 9, ""]],   // supply items, ruins, 18 blank spare tiles
 ];
 
 // ---- Per-faction data ----
@@ -113,19 +116,28 @@ function faction_cards_h(f) =
     f == "marquise" ? marquise_cards_h : f == "eyrie" ? eyrie_cards_h
     : f == "alliance" ? alliance_cards_h : vagabond_cards_h;
 
-// Token stacks in the column, listed from the back of the box forward: [shape, count]
+// Token stacks in the column, listed from the back of the box forward: [shape, count, icon]
+// (icons: lib/icons.scad and lib/icons/*.svg from game-icons.net, debossed into each pocket floor; "" = no icon, where the pocket's shape is enough)
 // Each faction keeps its own score marker. Items: the 12 supply items (placed every game, 5.1.5)
 // are in the shared tray; the other 11 (4 ruin + 7 Vagabond starting items, 9.3.4-9.3.5) are only
 // used with the Vagabond, so they live in its box.
 function faction_tokens(f) =
-    f == "marquise" ? [["round", 8], ["round", 1], ["square", 6], ["square", 6], ["square", 6]]   // wood, keep, sawmills, workshops, recruiters
-    : f == "eyrie" ? [["square", 7], ["square", 1]]                                              // roosts, score marker
-    : f == "alliance" ? [["round", 10], ["square", 3], ["square", 1]]                            // sympathy, bases, score marker
-    : [["square", 3], ["square", 11], ["square", 1]];                                            // relationship markers, Vagabond items, score marker
+    f == "marquise" ? [["round", 8, "log"], ["round", 1, "castle"], ["square", 6, "circular-saw"], ["square", 6, "anvil-impact"], ["square", 6, "shaking-hands"]]   // wood, keep, sawmills, workshops, recruiters
+    : f == "eyrie" ? [["square", 7, "tree-branch"], ["square", 1, "round-star"]]                              // roosts, score marker
+    : f == "alliance" ? [["round", 10, "fist"], ["square", 3, "camping-tent"], ["square", 1, "round-star"]]   // sympathy, bases, score marker
+    : [["square", 3, "hearts"], ["square", 11, "swap-bag"], ["square", 1, "round-star"], ["pawn", 1, ""]];   // relationship markers, Vagabond items, score marker, pawn
+
+// The Vagabond has no warriors: its pawn goes in the token column and its cards lie in a
+// top-loaded pocket where the warrior bin would be, so its box prints as one piece (no base,
+// no side slot, no pins). Everyone else keeps the two-piece box with the side-loading card slot.
+function one_piece(f) = f == "vagabond";
+pawn_w = 16.5;           // Vagabond pawn, lying flat (assumed the cat warrior's size)
+pawn_l = 22;
+card_notch_w = 20;       // finger notch through the outer wall beside a top-loaded card pocket
 
 // Extra pocket walled off in the warrior bin's back-right corner, next to the token column
 // (the Marquise column is full).
-function bin_corner_tokens(f) = f == "marquise" ? [["square", 1]] : [];                         // Marquise score marker
+function bin_corner_tokens(f) = f == "marquise" ? [["square", 1, "round-star"]] : [];                 // Marquise score marker
 
 // Where each box sits in the insert (2 x 2 block on the left; the shared tray on the right)
 function faction_pos(f) =

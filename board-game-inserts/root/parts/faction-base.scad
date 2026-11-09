@@ -11,7 +11,7 @@ use <../../lib/print.scad>
 faction = "marquise";
 in_layout = true;   // place at its position in the insert (false: at the origin)
 
-module faction_base(f) {
+module faction_base(f) if (!one_piece(f)) {
     w = faction_box_w;
     d = faction_box_d;
     h = base_h(f);

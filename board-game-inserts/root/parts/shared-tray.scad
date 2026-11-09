@@ -11,6 +11,7 @@
 include <../constants.scad>
 use <../lib/shared-layout.scad>
 use <../../lib/print.scad>
+use <../lib/icons.scad>
 
 in_layout = true;   // place at its position in the insert (false: at the origin)
 
@@ -36,6 +37,9 @@ module shared_tray() {
         for (p = pockets) {
             t = p[0];
             fz = stack_floor_z(t);
+            // icon debossed into the pocket floor
+            translate([p[1], p[2], fz - icon_depth]) linear_extrude(icon_depth + 0.01)
+                icon(t[2], min(icon_max, min(p[3], p[4]) - 2 * icon_margin));
             translate([p[1], p[2], fz]) {
                 linear_extrude(h) {
                     if (t[0] == "dice") rotate(90) stadium(p[4], p[3]);   // long slot across x

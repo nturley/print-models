@@ -138,6 +138,15 @@ Current favourite: **"Matching faction boxes"**. All trays are full height (46).
 parameters that differ per faction (card slot height, pockets). **Two pieces
 glued together**, both open cups that print upright with no supports:
 
+**Vagabond box: one piece.** The Vagabond has no warriors, so its box is just
+the top piece printed from the floor up (`one_piece()` in `constants.scad`):
+no base, no side slot, no pins. Its ~30 cards (8.2 mm) lie in a top-loaded
+65 × 90 pocket where the warrior bin would be, floor raised so they end 1 mm
+below the rim, with a 20 mm finger notch through the left wall (it faces the
+Alliance box in the insert) and peaked-roof hollows underneath. The pawn gets
+its own pocket in the token column. The other three factions keep the two-piece
+box below.
+
 - **Base** (`parts/faction-base.scad`): the **side-loading card slot**, 65 × 90
   inside, **centred side to side**, open through the back wall so cards slide in and out sideways.
   Height = floor + card stack + 1.5 mm headroom (Marquise/Alliance 3.4, Eyrie 6.5,
@@ -184,6 +193,25 @@ glued together**, both open cups that print upright with no supports:
   the front: it's closed over flush with the rim (hollow underneath, peaked
   roof) so nothing can fall in.
 
+**Pocket icons:** each token pocket has an icon debossed 0.6 mm into its
+floor, so an empty pocket shows what goes in it. They're from
+[game-icons.net](https://game-icons.net) (CC BY 3.0; artists credited in
+`lib/icons/CREDITS.md`), stored as plain SVGs in `lib/icons/` and imported by
+`lib/icons.scad`:
+
+| Pocket | Icon |
+|---|---|
+| Wood / keep / sawmills / workshops / recruiters | log / castle / circular saw / anvil impact / shaking hands |
+| Roosts | tree branch |
+| Bases / sympathy | camping tent / fist |
+| Relationship markers | hearts |
+| Items (supply and Vagabond) | swap bag |
+| Ruins | ancient columns |
+| Score markers | round star |
+
+No icon on the deck, the dice slot, the suit markers, the pawn (their pockets'
+shapes say what they hold) or the blank spare tiles.
+
 **Where the tokens go** (from the Law of Root, as transcribed at
 therootdatabase.com):
 
@@ -192,7 +220,7 @@ therootdatabase.com):
 | Marquise | wood, keep, sawmills, workshops, recruiters; **score marker** in a walled pocket in the warrior bin's back-right corner, next to the wood (the column is full) |
 | Eyrie | roosts, **score marker** |
 | Alliance | sympathy, bases, **score marker** |
-| Vagabond | relationship markers, **11 Vagabond-only items** (4 ruin items + 7 starting items, used only with the Vagabond: 9.3.4–9.3.5), **score marker** |
+| Vagabond | relationship markers, **11 Vagabond-only items** (4 ruin items + 7 starting items, used only with the Vagabond: 9.3.4–9.3.5), **score marker**, **pawn**; its cards lie in a top-loaded pocket where the warrior bin would be |
 | Shared tray | 12 supply items (placed every game: 5.1.5), ruins (every game: 5.1.4), suit markers, dice, deck, 18 blank spare tiles (not on the components list) |
 
 Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
