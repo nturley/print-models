@@ -58,14 +58,14 @@ module faction_top_shell(f) {
     }
 }
 
-// Extra pocket walled off in the warrior bin's back-left corner (Marquise score marker): a solid
-// corner block from the bin floor to the rim, with the pocket, its peaked-roof hollow and a finger
-// notch through the left outer wall cut into it.
+// Extra pocket walled off in the warrior bin's back-right corner, against the divider next to the
+// token column (Marquise score marker): a solid corner block from the bin floor to the rim, with the
+// pocket, its peaked-roof hollow and a finger notch through the back wall cut into it.
 module bin_pocket_block(f) {
     s = bin_pocket_size();
     o = bin_pocket_origin();
     for (t = bin_corner_tokens(f))
-        translate([wall - eps, o[1] - divider_t, bin_floor_z(f) - eps])
+        translate([o[0] - divider_t, o[1] - divider_t, bin_floor_z(f) - eps])
             cube([s + divider_t + eps, s + divider_t + eps, faction_box_h - bin_floor_z(f) + eps]);
 }
 
@@ -77,10 +77,11 @@ module bin_pocket_cuts(f) {
         fz = faction_box_h - token_headroom - t[1] * token_t;
         translate([o[0], o[1], fz]) rbox([s, s, faction_box_h], ri);
         translate([o[0], o[1], bin_floor_z(f)]) tent_bays([s, s], fz - pocket_floor_t - bin_floor_z(f), bay_max_w, divider_t, ri);
-        translate([-1, o[1] + s / 2, 0]) hull() {
-            for (sg = [-1, 1]) translate([0, sg * (finger_notch_w / 2 - notch_corner_r), fz + notch_corner_r])
-                rotate([0, 90, 0]) cylinder(r = notch_corner_r, h = wall + 2, $fn = 24);
-            translate([0, -finger_notch_w / 2, faction_box_h]) cube([wall + 2, finger_notch_w, 1]);
+        // finger notch through the back wall
+        translate([o[0] + s / 2, faction_box_d - wall - 1, 0]) hull() {
+            for (sg = [-1, 1]) translate([sg * (finger_notch_w / 2 - notch_corner_r), 0, fz + notch_corner_r])
+                rotate([-90, 0, 0]) cylinder(r = notch_corner_r, h = wall + 2, $fn = 24);
+            translate([-finger_notch_w / 2, 0, faction_box_h]) cube([finger_notch_w, wall + 2, 1]);
         }
     }
 }

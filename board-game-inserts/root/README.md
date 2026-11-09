@@ -189,7 +189,7 @@ therootdatabase.com):
 
 | Box | Token column (back to front) |
 |---|---|
-| Marquise | wood, keep, sawmills, workshops, recruiters; **score marker** in a walled pocket in the warrior bin's back-left corner (the column is full) |
+| Marquise | wood, keep, sawmills, workshops, recruiters; **score marker** in a walled pocket in the warrior bin's back-right corner, next to the wood (the column is full) |
 | Eyrie | roosts, **score marker** |
 | Alliance | sympathy, bases, **score marker** |
 | Vagabond | relationship markers, **11 Vagabond-only items** (4 ruin items + 7 starting items, used only with the Vagabond: 9.3.4–9.3.5), **score marker** |

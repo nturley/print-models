@@ -123,7 +123,8 @@ function faction_tokens(f) =
     : f == "alliance" ? [["round", 10], ["square", 3], ["square", 1]]                            // sympathy, bases, score marker
     : [["square", 3], ["square", 11], ["square", 1]];                                            // relationship markers, Vagabond items, score marker
 
-// Extra pocket walled off in the warrior bin's back-left corner (the Marquise column is full).
+// Extra pocket walled off in the warrior bin's back-right corner, next to the token column
+// (the Marquise column is full).
 function bin_corner_tokens(f) = f == "marquise" ? [["square", 1]] : [];                         // Marquise score marker
 
 // Where each box sits in the insert (2 x 2 block on the left; the shared tray on the right)
