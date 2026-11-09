@@ -49,9 +49,10 @@ corner_r = 4;            // outer vertical corners of the base and top (inner co
 
 // ---- Base-to-top joint: two pins on the base, two holes in the top (press fit, tune by test print) ----
 pin_hole_d = 5.15;       // hole in the top piece (unchanged since the first prints)
-pin_fit = 0.25;          // hole diameter minus pin diameter: tune the pin, not the hole
-                         // (0.15 was perfect in orange PLA but too tight in green: filaments vary)
-pin_d = pin_hole_d - pin_fit;   // 4.9
+pin_fit = 0.35;          // hole diameter minus pin diameter: tune the pin, not the hole
+                         // (0.15: perfect in orange, too tight in green; 0.25: still tight in grey.
+                         //  Err loose: a loose fit takes a drop of glue, a tight one can crack a piece)
+pin_d = pin_hole_d - pin_fit;   // 4.8
 pin_h = 4;
 pin_chamfer = 0.6;       // lead-in on the pin tip
 pin_hole_extra = 0.4;    // hole deeper than the pin, so the faces seat flush

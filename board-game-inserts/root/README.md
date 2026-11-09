@@ -146,7 +146,7 @@ glued together**, both open cups that print upright with no supports:
   against the top piece (the slicer's infill keeps the filament cost low). In
   the insert, the opening faces the box wall or a neighbouring tray, so cards
   can't slide out.
-- **Joint:** four **4.9 mm pins, 4 mm tall**, one in each corner (6 mm from both
+- **Joint:** four **4.8 mm pins, 4 mm tall**, one in each corner (6 mm from both
   walls), stand on the solid strips beside and in front of the centred card
   slot and go into matching holes in the top's underside. The two on the
   warrior-bin side go into the bin's raised solid floor; the two on the token
@@ -154,8 +154,10 @@ glued together**, both open cups that print upright with no supports:
 
   Holes are 5.15 mm (`pin_hole_d`); the pins are `pin_fit` smaller. At 0.15
   (5.0 mm pins) the orange Marquise was a perfect press fit but the green
-  Alliance was too tight (filaments vary), so the pins are now **4.9 mm
-  (`pin_fit` = 0.25)**. Tune the pin, not the hole: a new base fits tops
+  Alliance was too tight (filaments vary); at 0.25 (4.9 mm) the Vagabond was
+  still tight. Pins are now **4.8 mm (`pin_fit` = 0.35)**: err on the loose
+  side, since a loose fit takes a drop of glue but a tight one can crack a
+  piece during assembly. Tune the pin, not the hole: a new base fits tops
   already printed. Pin tips and hole mouths are chamfered.
 - **Top** (`parts/faction-top.scad`): its 1.2 mm floor is the slot's ceiling,
   and since that's the side printed against the bed, the cards slide on a
