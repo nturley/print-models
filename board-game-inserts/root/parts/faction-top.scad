@@ -78,23 +78,21 @@ module faction_top_shell(f) {
 }
 
 // Extra pocket walled off in the warrior bin's back-right corner, against the divider next to the
-// token column (Marquise score marker): a solid corner block from the bin floor to the rim, with the
+// token column (Marquise keep): a solid corner block from the bin floor to the rim, with the
 // pocket, its peaked-roof hollow and a finger notch through the back wall cut into it.
 module bin_pocket_block(f) {
-    s = bin_pocket_size();
-    o = bin_pocket_origin();
-    for (t = bin_corner_tokens(f))
+    for (t = bin_corner_tokens(f)) let (s = bin_pocket_size(t), o = bin_pocket_origin(t))
         translate([o[0] - divider_t, o[1] - divider_t, bin_floor_z(f) - eps])
             cube([s + divider_t + eps, s + divider_t + eps, faction_box_h - bin_floor_z(f) + eps]);
 }
 
 module bin_pocket_cuts(f) {
-    s = bin_pocket_size();
-    o = bin_pocket_origin();
     ri = corner_r - wall;
     for (t = bin_corner_tokens(f)) {
-        fz = faction_box_h - token_headroom - t[1] * token_t;
-        translate([o[0], o[1], fz]) rbox([s, s, faction_box_h], ri);
+        s = bin_pocket_size(t);
+        o = bin_pocket_origin(t);
+        fz = faction_box_h - token_headroom - token_stack_h(t);
+        translate([o[0], o[1], fz]) rbox([s, s, faction_box_h], t[0] == "round" ? s / 2 : ri);   // round tokens: round pocket
         translate([o[0] + s / 2, o[1] + s / 2, fz - icon_depth]) linear_extrude(icon_depth + eps)
             icon(t[2], min(icon_max, s - 2 * icon_margin));
         translate([o[0], o[1], bin_floor_z(f)]) tent_bays([s, s], fz - pocket_floor_t - bin_floor_z(f), bay_max_w, divider_t, ri);

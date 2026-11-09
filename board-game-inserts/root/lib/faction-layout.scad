@@ -28,8 +28,8 @@ function spare_length(f) =
 // The box is two open cups glued together: the base (card slot) and the top (warriors + tokens).
 // Corner pocket in the warrior bin (back-right, against the divider next to the token column),
 // for factions whose column is full.
-function bin_pocket_size() = square_tile + 2 * bin_pocket_clr;
-function bin_pocket_origin() = [wall + bin_w - bin_pocket_size(), faction_box_d - wall - bin_pocket_size()];
+function bin_pocket_size(t) = token_size(t) + 2 * bin_pocket_clr;
+function bin_pocket_origin(t) = [wall + bin_w - bin_pocket_size(t), faction_box_d - wall - bin_pocket_size(t)];
 
 function slot_height(f) = faction_cards_h(f) + slot_headroom;
 function base_h(f) = one_piece(f) ? 0 : floor_t + slot_height(f);   // where the top piece starts (0: one piece)

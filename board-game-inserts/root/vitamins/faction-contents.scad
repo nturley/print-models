@@ -14,11 +14,12 @@ module faction_contents(f, show = "all") {
                                : [slot_x0() + card_clr, slot_y0() + card_clr, floor_t])      // in the side slot
             cube([card_w, card_l, faction_cards_h(f)]);
     }
-    // stack in the warrior bin's corner pocket (Marquise score marker)
+    // stack in the warrior bin's corner pocket (Marquise keep)
     if (show != "cards") for (t = bin_corner_tokens(f)) {
-        s = bin_pocket_size(); o = bin_pocket_origin(); h = t[1] * token_t;
-        translate([o[0] + s / 2 - square_tile / 2, o[1] + s / 2 - square_tile / 2, faction_box_h - token_headroom - h])
-            cube([square_tile, square_tile, h]);
+        s = bin_pocket_size(t); o = bin_pocket_origin(t); h = token_stack_h(t);
+        translate([o[0] + s / 2, o[1] + s / 2, faction_box_h - token_headroom - h])
+            if (t[0] == "round") cylinder(d = round_token_d, h = h, $fn = 64);
+            else translate([-square_tile / 2, -square_tile / 2, 0]) cube([square_tile, square_tile, h]);
     }
     // token stacks, centred in their pockets, on the raised floors
     toks = faction_tokens(f);

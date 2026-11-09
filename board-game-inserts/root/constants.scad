@@ -121,11 +121,12 @@ function faction_cards_h(f) =
 // Each faction keeps its own score marker. Items: the 12 supply items (placed every game, 5.1.5)
 // are in the shared tray; the other 11 (4 ruin + 7 Vagabond starting items, 9.3.4-9.3.5) are only
 // used with the Vagabond, so they live in its box.
+// The score marker is always first: the back of the token column, the top right of every box.
 function faction_tokens(f) =
-    f == "marquise" ? [["round", 8, "log"], ["round", 1, "castle"], ["square", 6, "circular-saw"], ["square", 6, "anvil-impact"], ["square", 6, "shaking-hands"]]   // wood, keep, sawmills, workshops, recruiters
-    : f == "eyrie" ? [["square", 7, "tree-branch"], ["square", 1, "round-star"]]                              // roosts, score marker
-    : f == "alliance" ? [["round", 10, "fist"], ["square", 3, "camping-tent"], ["square", 1, "round-star"]]   // sympathy, bases, score marker
-    : [["square", 3, "hearts"], ["square", 11, "swap-bag"], ["square", 1, "round-star"], ["pawn", 1, ""]];   // relationship markers, Vagabond items, score marker, pawn
+    f == "marquise" ? [["square", 1, "round-star"], ["round", 8, "log"], ["square", 6, "circular-saw"], ["square", 6, "anvil-impact"], ["square", 6, "shaking-hands"]]   // score, wood, sawmills, workshops, recruiters
+    : f == "eyrie" ? [["square", 1, "round-star"], ["square", 7, "tree-branch"]]                              // score, roosts
+    : f == "alliance" ? [["square", 1, "round-star"], ["round", 10, "fist"], ["square", 3, "camping-tent"]]   // score, sympathy, bases
+    : [["square", 1, "round-star"], ["square", 3, "hearts"], ["square", 11, "swap-bag"], ["pawn", 1, ""]];   // score, relationship markers, Vagabond items, pawn
 
 // The Vagabond has no warriors: its pawn goes in the token column and its cards lie in a
 // top-loaded pocket where the warrior bin would be, so its box prints as one piece (no base,
@@ -136,8 +137,8 @@ pawn_l = 22;
 card_notch_w = 20;       // finger notch through the outer wall beside a top-loaded card pocket
 
 // Extra pocket walled off in the warrior bin's back-right corner, next to the token column
-// (the Marquise column is full).
-function bin_corner_tokens(f) = f == "marquise" ? [["square", 1, "round-star"]] : [];                 // Marquise score marker
+// (the Marquise column is full, so its keep goes here).
+function bin_corner_tokens(f) = f == "marquise" ? [["round", 1, "castle"]] : [];                     // Marquise keep
 
 // Where each box sits in the insert (2 x 2 block on the left; the shared tray on the right)
 function faction_pos(f) =

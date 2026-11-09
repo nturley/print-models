@@ -213,14 +213,15 @@ No icon on the deck, the dice slot, the suit markers, the pawn (their pockets'
 shapes say what they hold) or the blank spare tiles.
 
 **Where the tokens go** (from the Law of Root, as transcribed at
-therootdatabase.com):
+therootdatabase.com). The **score marker is always in the top-right pocket**
+(the back of the token column) of every faction box:
 
 | Box | Token column (back to front) |
 |---|---|
-| Marquise | wood, keep, sawmills, workshops, recruiters; **score marker** in a walled pocket in the warrior bin's back-right corner, next to the wood (the column is full) |
-| Eyrie | roosts, **score marker** |
-| Alliance | sympathy, bases, **score marker** |
-| Vagabond | relationship markers, **11 Vagabond-only items** (4 ruin items + 7 starting items, used only with the Vagabond: 9.3.4–9.3.5), **score marker**, **pawn**; its cards lie in a top-loaded pocket where the warrior bin would be |
+| Marquise | **score marker**, wood, sawmills, workshops, recruiters; the **keep** is in a round walled pocket in the warrior bin's back-right corner, next to the score marker (the column is full) |
+| Eyrie | **score marker**, roosts |
+| Alliance | **score marker**, sympathy, bases |
+| Vagabond | **score marker**, relationship markers, **11 Vagabond-only items** (4 ruin items + 7 starting items, used only with the Vagabond: 9.3.4–9.3.5), **score marker**, **pawn**; its cards lie in a top-loaded pocket where the warrior bin would be |
 | Shared tray | 12 supply items (placed every game: 5.1.5), ruins (every game: 5.1.4), suit markers, dice, deck, 18 blank spare tiles (not on the components list) |
 
 Model: `constants.scad`, `parts/faction-base.scad` + `parts/faction-top.scad`
