@@ -61,6 +61,9 @@
   .bedinfo { position: absolute; left: 12px; top: 12px; background: var(--panel); border: 1px solid var(--line);
     border-radius: 6px; padding: 8px 12px; font-size: 12px; line-height: 1.6; }
   .bedinfo b { font-size: 13px; }
+  .bedlink { font: inherit; font-weight: 600; color: inherit; background: none; border: 0; padding: 0;
+    text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
+  .bedlink:hover, .bedlink:focus-visible { color: var(--ink); text-decoration-style: solid; }
   .part.disabled label { opacity: .45; cursor: default; }
   .error-box { color: var(--fail); white-space: pre-wrap; }
   select { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
@@ -110,7 +113,7 @@
   <canvas id="c"></canvas>
   <div class="readout" id="readout" hidden></div>
   <div class="bedinfo" id="bedinfo" hidden></div>
-  <div class="hint" id="hint">Drag to orbit · right-drag to pan · scroll to zoom · click a measurement to show it</div>
+  <div class="hint" id="hint">Drag to orbit · right-drag to pan · scroll to zoom at the cursor · double-click to orbit around a point · click a measurement to show it</div>
 </main>
 
 <script type="module">
@@ -134,6 +137,7 @@ const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 5000);
 camera.up.set(0, 0, 1); // OpenSCAD is Z-up
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
+controls.zoomToCursor = true;   // scroll zooms toward the point under the mouse, not the orbit centre
 scene.add(new THREE.HemisphereLight(0xffffff, 0x777788, 1.6));
 const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(1, -1.5, 2); scene.add(sun);
 const fill = new THREE.DirectionalLight(0xffffff, 0.5); fill.position.set(-1, 1, -0.5); scene.add(fill);
@@ -336,7 +340,9 @@ function buildBed(report) {
   const fmt = v => +v.toFixed(1);
   const rows = plates.map(pl => {
     const pct = (100 * pl.size[0] * pl.size[1] / (W * D)).toFixed(1);
-    return `${pl.name ? `<b>${pl.name}</b>: ` : 'Parts use '}${pl.size.map(fmt).join(' × ')} mm (${pct}% of the bed)`;
+    const name = pl.name && n > 1 ? `<button class="bedlink" data-plate="${pl.name}" title="Zoom to this bed">${pl.name}</button>: `
+      : pl.name ? `<b>${pl.name}</b>: ` : 'Parts use ';
+    return `${name}${pl.size.map(fmt).join(' × ')} mm (${pct}% of the bed)`;
   });
   document.getElementById('bedinfo').innerHTML =
     `<b>${pr.name}</b>${n > 1 ? ` · ${n} beds` : ''}<br>Build volume ${W} × ${D} × ${H} mm<br>` +
@@ -460,7 +466,7 @@ document.getElementById('mode').addEventListener('click', e => {
   for (const x of e.currentTarget.children) x.classList.toggle('on', x === b);
   document.getElementById('hint').textContent = mode === 'measure'
     ? 'Click two points on the model to measure the distance between them'
-    : 'Drag to orbit · right-drag to pan · scroll to zoom · click a measurement to show it';
+    : 'Drag to orbit · right-drag to pan · scroll to zoom at the cursor · double-click to orbit around a point · click a measurement to show it';
 });
 const ray = new THREE.Raycaster();
 let down = null;
@@ -481,6 +487,28 @@ canvas.addEventListener('pointerup', e => {
     showReadout(`${fmt(d.length())}   (Δx ${d.x.toFixed(3)}, Δy ${d.y.toFixed(3)}, Δz ${d.z.toFixed(3)})`);
     picks = [];
   }
+});
+
+// double-click a part or a bed: orbit around that point (camera keeps its angle and distance)
+canvas.addEventListener('dblclick', e => {
+  if (mode !== 'orbit') return;
+  const r = canvas.getBoundingClientRect();
+  ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
+  const targets = meshes.filter(m => m.group.visible).map(m => m.group.children[0]);
+  if (bed.visible) bed.traverse(o => { if (o.isMesh) targets.push(o); });
+  const hit = ray.intersectObjects(targets).find(h => view === 'bed' || axis === 'off' || plane.distanceToPoint(h.point) >= 0);
+  if (!hit) return;
+  const offset = camera.position.clone().sub(controls.target);
+  controls.target.copy(hit.point);
+  camera.position.copy(hit.point).add(offset);
+});
+
+// bed names in the info box: frame just that bed
+document.getElementById('bedinfo').addEventListener('click', e => {
+  const b = e.target.closest('.bedlink'); if (!b) return;
+  const { W, D, H, offsets } = bed.userData;
+  const x = offsets?.[b.dataset.plate] || 0;
+  frame(new THREE.Vector3(x, -D * 0.04, H * 0.2), Math.hypot(W, D, H) * 0.85, new THREE.Vector3(0.6, -1.3, 1.0));
 });
 
 renderer.setAnimationLoop(() => { controls.update(); scaleMarkers(); renderer.render(scene, camera); });
