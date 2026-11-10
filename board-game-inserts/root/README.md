@@ -268,7 +268,7 @@ column, 94 × 213 × 40 (fits the K2 bed).
 - **Front half**, three rows:
   - Back row: **one pill-shaped bowl** (curved both ways) across the tray for all 12 suit markers, loose (they
     were too irregular for per-suit pockets): a trough with a curved floor,
-    34 mm front to back, 12 mm deep.
+    34 mm front to back, 17 mm deep (a half-round: as deep as it goes without undercutting the rim).
   - Middle row: **both dice in one long slot**, with a **20 mm scoop** at each end.
   - Front row: 4 square stacks (the 12 supply items, ruins, and the 18 blank
     spare tiles as two stacks of 9) **against the front wall**, each with a

@@ -96,7 +96,7 @@ icon_margin = 3;         // icon size = smallest pocket side minus this, each si
 icon_max = 13;
 bin_pocket_clr = 0.75;   // around the stack in the warrior-bin corner pocket (each side)
 suit_bowl_l = 34;        // suit-marker bowl, front to back: a trough with a curved floor
-suit_bowl_depth = 12;    // deepest point below the rim
+suit_bowl_depth = 17;    // deepest point below the rim (max suit_bowl_l / 2: a half-round, no undercut)
 suit_bowl_margin = 3;    // from the side walls (the bowl spans the tray)
 die_scoop_d = 20;        // at each end of the dice slot
 bay_max_w = 22;          // hollow bays under raised floors: widest one whose 45° roof fits

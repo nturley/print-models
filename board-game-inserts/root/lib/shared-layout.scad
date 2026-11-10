@@ -21,6 +21,7 @@ function stack_floor_z(t) =
 // Bowl trough: a cylinder along x whose arc spans the bowl's front-to-back length at the rim and
 // dips suit_bowl_depth in the middle. Returns [radius, axis height].
 function bowl_arc() =
+    assert(suit_bowl_depth <= suit_bowl_l / 2 + 1e-6, "suit bowl deeper than a half-round would undercut the rim")
     let (half = suit_bowl_l / 2, dd = suit_bowl_depth, r = (half * half + dd * dd) / (2 * dd))
     [r, faction_box_h - dd + r];
 
